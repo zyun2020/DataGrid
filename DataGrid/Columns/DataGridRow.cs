@@ -8,18 +8,14 @@ namespace ZyunUI
     /// </summary>
     public class DataGridRow
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="RowDefinition"/> class.
-        /// </summary>
-        public DataGridRow()
-        { 
-        }
-
-        public DataGridRow(String header)
+        public DataGridRow(int index, object header = null)
         {
-            this.Header = header;    
+            this.Index = index;
+            this.Header = header;
         }
-
+     
+        public int Index { get; private set; }
+        
         public double ActualHeight { get; internal set; } = double.NaN;
 
         /// <summary>

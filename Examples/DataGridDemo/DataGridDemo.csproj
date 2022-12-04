@@ -11,9 +11,6 @@
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
-  <ItemGroup>
-    <None Remove="Examples\GettingStartedExample.xaml" />
-  </ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -40,12 +37,7 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\DataGrid\DataGrid.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Examples\GettingStartedExample.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
+    <ProjectReference Include="..\..\DataGrid\DataGrid.csproj" />
   </ItemGroup>
 
   <!-- 

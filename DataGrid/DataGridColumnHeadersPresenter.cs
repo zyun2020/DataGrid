@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
+using DiagnosticsDebug = System.Diagnostics.Debug;
 
 namespace ZyunUI
 {
@@ -120,6 +121,72 @@ namespace ZyunUI
             }
 
             return new Size(this.OwningGrid.ColumnsInternal.VisibleEdgedColumnsWidth, this.OwningGrid.ActualColumnHeaderHeight);
+        }
+
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            if (this.OwningGrid == null)
+            {
+                return base.ArrangeOverride(finalSize);
+            }
+
+            double dragIndicatorLeftEdge = 0;
+            double frozenLeftEdge = 0;
+            double scrollingLeftEdge = -this.OwningGrid.HorizontalOffset;
+            foreach (DataGridColumn dataGridColumn in this.OwningGrid.ColumnsInternal.GetVisibleColumns())
+            {
+                DataGridColumnHeader columnHeader = dataGridColumn.HeaderCell;
+                DiagnosticsDebug.Assert(columnHeader.OwningColumn == dataGridColumn, "Expected columnHeader owned by dataGridColumn.");
+
+                if (dataGridColumn.IsFrozen)
+                {
+                    columnHeader.Arrange(new Rect(frozenLeftEdge, 0, dataGridColumn.ActualWidth, finalSize.Height));
+                    columnHeader.Clip = null; // The layout system could have clipped this because it's not aware of our render transform
+                    if (this.DragColumn == dataGridColumn && this.DragIndicator != null)
+                    {
+                        dragIndicatorLeftEdge = frozenLeftEdge + this.DragIndicatorOffset;
+                    }
+
+                    frozenLeftEdge += dataGridColumn.ActualWidth;
+                }
+                else
+                {
+                    columnHeader.Arrange(new Rect(scrollingLeftEdge, 0, dataGridColumn.ActualWidth, finalSize.Height));
+                    EnsureColumnHeaderClip(columnHeader, dataGridColumn.ActualWidth, finalSize.Height, frozenLeftEdge, scrollingLeftEdge);
+                    if (this.DragColumn == dataGridColumn && this.DragIndicator != null)
+                    {
+                        dragIndicatorLeftEdge = scrollingLeftEdge + this.DragIndicatorOffset;
+                    }
+                }
+
+                scrollingLeftEdge += dataGridColumn.ActualWidth;
+            }
+
+            // This needs to be updated after the filler column is configured
+            DataGridColumn lastVisibleColumn = this.OwningGrid.ColumnsInternal.LastVisibleColumn;
+            if (lastVisibleColumn != null)
+            {
+                lastVisibleColumn.HeaderCell.UpdateSeparatorVisibility(lastVisibleColumn);
+            }
+
+            return finalSize;
+        }
+
+        private static void EnsureColumnHeaderClip(DataGridColumnHeader columnHeader, double width, double height, double frozenLeftEdge, double columnHeaderLeftEdge)
+        {
+            // Clip the cell only if it's scrolled under frozen columns.  Unfortunately, we need to clip in this case
+            // because cells could be transparent
+            if (frozenLeftEdge > columnHeaderLeftEdge)
+            {
+                RectangleGeometry rg = new RectangleGeometry();
+                double xClip = Math.Min(width, frozenLeftEdge - columnHeaderLeftEdge);
+                rg.Rect = new Rect(xClip, 0, width - xClip, height);
+                columnHeader.Clip = rg;
+            }
+            else
+            {
+                columnHeader.Clip = null;
+            }
         }
 
     }

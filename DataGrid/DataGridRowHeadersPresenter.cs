@@ -31,7 +31,7 @@ namespace ZyunUI
                 return base.MeasureOverride(availableSize);
             }
 
-            if (this.OwningGrid.DisplayData.NumDisplayedRows == 0)
+            if (!OwningGrid.AreRowHeadersVisible || this.OwningGrid.DisplayData.NumDisplayedRows == 0)
             {
                 return new Size(0.0, 0.0);
             }

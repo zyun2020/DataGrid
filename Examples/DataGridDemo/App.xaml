@@ -8,7 +8,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <!-- Other merged dictionaries here -->
-                <ResourceDictionary Source="ms-appx:///PropertyTools/Themes/generic.xaml"/>
+                <ResourceDictionary Source="ms-appx:///DataGrid/Themes/generic.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
         </ResourceDictionary>

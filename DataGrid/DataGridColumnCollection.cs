@@ -183,7 +183,7 @@ namespace ZyunUI
                 }
 
                 // get the new current cell coordinates
-                DataGridCellCoordinates newCurrentCellCoordinates = _owningGrid.OnInsertingColumn(columnIndex, dataGridColumn);
+                //DataGridCellCoordinates newCurrentCellCoordinates = _owningGrid.OnInsertingColumn(columnIndex, dataGridColumn);
 
                 // insert the column into our internal list
                 this.ItemsInternal.Insert(columnIndex, dataGridColumn);
@@ -195,14 +195,17 @@ namespace ZyunUI
                     this.VisibleEdgedColumnsWidth += dataGridColumn.ActualWidth;
                 }
 
+                dataGridColumn.InitDisplayIndex(columnIndex);
+                DisplayIndexMap.Add(columnIndex);
+
                 // continue with the base insert
-                _owningGrid.OnInsertedColumn_PreNotification(dataGridColumn);
-                _owningGrid.OnColumnCollectionChanged_PreNotification(true /*columnsGrew*/);
+                //_owningGrid.OnInsertedColumn_PreNotification(dataGridColumn);
+                //_owningGrid.OnColumnCollectionChanged_PreNotification(true /*columnsGrew*/);
 
                 base.InsertItem(columnIndex, dataGridColumn);
            
-                _owningGrid.OnInsertedColumn_PostNotification(newCurrentCellCoordinates, dataGridColumn.DisplayIndex);
-                _owningGrid.OnColumnCollectionChanged_PostNotification(true /*columnsGrew*/);
+                //_owningGrid.OnInsertedColumn_PostNotification(newCurrentCellCoordinates, dataGridColumn.DisplayIndex);
+                //_owningGrid.OnColumnCollectionChanged_PostNotification(true /*columnsGrew*/);
             }
             finally
             {

@@ -6,7 +6,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using ZyunUI.DataGridInternals;
 using ZyunUI.Utilities;
 
 using DiagnosticsDebug = System.Diagnostics.Debug;
@@ -48,13 +50,14 @@ namespace ZyunUI
 
         private void Reset()
         {
-
             Rows.Clear();
             for (var i = 0; i < CollectionView.Count; i++)
             {
-                Rows.Add(new DataGridRow(DefaultRowHeader(i)));
+                Rows.Add(new DataGridRow(i));
             }
         }
+
+       
 
         private void ItemInserted(uint index)
         {
@@ -227,6 +230,166 @@ namespace ZyunUI
             return !this.AllowEdit;
         }
 
+        private double GetRowActualHeight(int rowIndex)
+        {
+            DiagnosticsDebug.Assert(rowIndex >= 0 && rowIndex < RowCount, "Expected positive rowIndex.");
+            return Rows[rowIndex].ActualHeight;
+        }
+        internal DataGridRowVisuals GenerateRow(int rowIndex)
+        {
+            DiagnosticsDebug.Assert(rowIndex >= 0, "Expected positive rowIndex.");
+
+            object dataItem = null;
+            if (rowIndex < CollectionView.Count)
+                dataItem = CollectionView[rowIndex];
+
+            DataGridRowVisuals row = DisplayData.GetUsedRow();
+            if (row == null)
+            {
+                row = new DataGridRowVisuals();
+
+                FrameworkElement element;
+                var columns = Columns;
+                DataGridColumn dataGridColumn;
+                for (int i = 0; i < columns.Count; i++)
+                {
+                    dataGridColumn = columns[i];
+
+                    DataGridCell dataGridCell = new DataGridCell();
+                    element = dataGridColumn.GenerateElementInternal(dataGridCell, dataItem);
+                    element.SetStyleWithType(dataGridColumn.CellStyle);
+                    dataGridCell.Content = element;
+                    dataGridCell.Width = dataGridColumn.ActualWidth;
+                    row.Insert(i, dataGridCell);
+                }
+                
+            }
+            
+            row.DisplayHeight = Rows[rowIndex].ActualHeight;
+
+            if (AreRowHeadersVisible)
+            {
+                DataGridRowHeader headerCell = row.HeaderCell;
+                if (headerCell == null)
+                {
+                    headerCell = row.CreateHeaderCell(RowHeaderColumn.CellStyle);
+                }
+                TextBlock textBlock = RowHeaderColumn.GenerateRowHeader(dataItem);
+                if (RowHeaderColumn.Binding == null)
+                {
+                    textBlock.Text = CellRef.ToRowName(rowIndex);
+                }
+                headerCell.Height = Rows[rowIndex].ActualHeight;
+            }
+            row.UpdateDataContext(dataItem);
+
+            return row;
+        }
+
+        internal void InsertDisplayedElement(int displayRow, DataGridRowVisuals rowVisuals)
+        {
+            if (_rowHeadersPresenter != null && AreRowHeadersVisible)
+            {
+                rowVisuals.HeaderCell.Visibility = Visibility.Visible;
+                _rowHeadersPresenter.Children.Insert(displayRow, rowVisuals.HeaderCell);
+            }
+
+            int cellIndex = displayRow * rowVisuals.CellCount;
+            if (_cellsPresenter != null)
+            { 
+                for(int i = 0; i < rowVisuals.CellCount; i++)
+                {
+                    _cellsPresenter.Children.Insert(cellIndex + i, rowVisuals[i]);
+                }
+            }
+        }
+
+        internal void RemoveDisplayedElement(int displayRow, DataGridRowVisuals rowVisuals)
+        {
+            if (_rowHeadersPresenter != null)
+            {
+                DiagnosticsDebug.Assert(_rowHeadersPresenter.Children[displayRow] == rowVisuals.HeaderCell, "RemoveDisplayedElement row header.");
+                _rowHeadersPresenter.Children.RemoveAt(displayRow);
+            }
+
+            int cellIndex = displayRow * rowVisuals.CellCount;
+            if (_cellsPresenter != null)
+            {
+                for (int i = 0; i < rowVisuals.CellCount; i++)
+                {
+                    DiagnosticsDebug.Assert(_cellsPresenter.Children[cellIndex + i] == rowVisuals[cellIndex + i], "RemoveDisplayedElement cells.");
+                    _cellsPresenter.Children.RemoveAt(cellIndex + i);
+                }
+            }
+        }
+
+        internal void RemoveAllDisplayedElement()
+        {
+            if (_rowHeadersPresenter != null)
+            {
+                _rowHeadersPresenter.Children.Clear();
+            }
+             
+            if (_cellsPresenter != null)
+            {
+                _cellsPresenter.Children.Clear();
+            }
+        }
+
+        private void UpdateDisplayedRows(int newFirstDisplayedRow, double displayHeight)
+        {
+            int firstDisplayedScrollingRow = newFirstDisplayedRow;
+            int lastDisplayedScrollingRow = -1;
+            double deltaY = -this.NegVerticalOffset;
+            int visibleScrollingRows = 0;
+
+            if (DoubleUtil.LessThanOrClose(displayHeight, 0) || this.RowCount == 0 || this.ColumnsItemsInternal.Count == 0)
+            {
+                return;
+            }
+
+            if (firstDisplayedScrollingRow == -1)
+            {
+                // 0 is fine because the element in the first slot cannot be collapsed
+                firstDisplayedScrollingRow = 0;
+            }
+
+            int rowIndex = firstDisplayedScrollingRow;
+            while (rowIndex < this.RowCount && DoubleUtil.LessThan(deltaY, displayHeight))
+            {
+                deltaY += Rows[rowIndex].ActualHeight;
+                visibleScrollingRows++;
+                lastDisplayedScrollingRow = rowIndex;
+                rowIndex++;
+            }
+
+            rowIndex = firstDisplayedScrollingRow - 1;
+            while (rowIndex >= 0 && DoubleUtil.LessThan(deltaY, displayHeight))
+            {
+                deltaY += Rows[rowIndex].ActualHeight;
+                visibleScrollingRows++;
+                firstDisplayedScrollingRow = rowIndex;
+                rowIndex--;
+            }
+
+            // If we're up to the first row, and we still have room left, uncover as much of the first row as we can
+            if (firstDisplayedScrollingRow == 0 && DoubleUtil.LessThan(deltaY, displayHeight))
+            {
+                double newNegVerticalOffset = Math.Max(0, this.NegVerticalOffset - displayHeight + deltaY);
+                deltaY += this.NegVerticalOffset - newNegVerticalOffset;
+                this.NegVerticalOffset = newNegVerticalOffset;
+            }
+
+            if (visibleScrollingRows == 0)
+            {
+                firstDisplayedScrollingRow = -1;
+                DiagnosticsDebug.Assert(lastDisplayedScrollingRow == -1, "Expected lastDisplayedScrollingSlot equal to -1.");
+            }
+ 
+            DisplayData.UpdateDisplayedRows(firstDisplayedScrollingRow, lastDisplayedScrollingRow);
+        }
+
+       
     }
    
 }

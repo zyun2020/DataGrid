@@ -248,6 +248,41 @@ namespace ZyunUI
             return textBlockElement;
         }
 
+        internal TextBlock GenerateRowHeader(object dataItem)
+        {
+            TextBlock textBlockElement = new TextBlock();
+            textBlockElement.Margin = new Thickness(DATAGRIDTEXTCOLUMN_leftMargin, 0.0, DATAGRIDTEXTCOLUMN_rightMargin, 0.0);
+            textBlockElement.VerticalAlignment = VerticalAlignment.Center;
+            if (DependencyProperty.UnsetValue != ReadLocalValue(DataGridTextColumn.FontFamilyProperty))
+            {
+                textBlockElement.FontFamily = this.FontFamily;
+            }
+
+            if (_fontSize.HasValue)
+            {
+                textBlockElement.FontSize = _fontSize.Value;
+            }
+
+            if (_fontStyle.HasValue)
+            {
+                textBlockElement.FontStyle = _fontStyle.Value;
+            }
+
+            if (_fontWeight.HasValue)
+            {
+                textBlockElement.FontWeight = _fontWeight.Value;
+            }
+
+            //RefreshForeground(textBlockElement, (cell != null & cell.OwningRow != null) ? cell.OwningRow.ComputedForeground : null);
+
+            if (this.Binding != null)
+            {
+                textBlockElement.SetBinding(TextBlock.TextProperty, this.Binding);
+            }
+
+            return textBlockElement;
+        }
+
         /// <summary>
         /// Called when the cell in the column enters editing mode.
         /// </summary>

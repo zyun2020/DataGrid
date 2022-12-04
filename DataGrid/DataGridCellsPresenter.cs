@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using Windows.Foundation;
+using ZyunUI.DataGridInternals;
 
 namespace ZyunUI
 {
@@ -27,42 +28,33 @@ namespace ZyunUI
 
         protected override Size ArrangeOverride(Size finalSize)
         {
-            //var rows = OwningGrid.Rows;
-            //DataGridRow row;
-            //var columns = OwningGrid.Columns;
-            //DataGridColumn column;
+            var columns = this.OwningGrid.ColumnsInternal.GetVisibleColumns();
+            Rect rcChild = new Rect();
+            rcChild.X = 0;
+            rcChild.Y = 0;
 
-            //FrameworkElement element;
-            //AdvancedCollectionView collectionView = OwningGrid.CollectionView;
-            //Children.Clear();
+            DataGridDisplayData displayData = this.OwningGrid.DisplayData;
+            DataGridRowVisuals rowVisuals;
+            DataGridCell gridCell;
+            for (int i = 0; i < displayData.NumDisplayedRows; i++)
+            {
+                rowVisuals = displayData.GetDisplayedRow(i);
 
-            //Rect rcChild = new Rect();
+                rcChild.Height = rowVisuals.DisplayHeight;
+                rcChild.X = 0;
 
-            //rcChild.X = m_offsetX;
-            //rcChild.Y = m_offsetY;
+                for (int k = 0; k < rowVisuals.CellCount; k++)
+                {
+                    gridCell = rowVisuals[k];
 
-            //for (int i = m_nStartRow; i < rows.Count; i++)
-            //{
-            //    row = rows[i];
-            //    rcChild.Height = row.ActualHeight;
+                    rcChild.Width = gridCell.Width;
+                    gridCell.Arrange(rcChild);
 
-            //    for (int j = 0; j < columns.Count; j++)
-            //    {
-            //        column = columns[i];
-            //        element = OwningGrid.CreateDisplayControl(column);
-            //        element.DataContext = collectionView[i];
+                    rcChild.X += rcChild.Width;
+                }
 
-            //        DataGridCell gridCell = new DataGridCell();
-            //        gridCell.Content = element;
-
-            //        rcChild.Width = column.ActualWidth;
-            //        gridCell.Arrange(rcChild);
-            //        Children.Add(gridCell);
-
-            //        rcChild.X += rcChild.Width;
-            //    }
-            //    rcChild.Y += rcChild.Height;
-            //}
+                rcChild.Y += rcChild.Height;
+            }
 
             return base.ArrangeOverride(finalSize);
         }

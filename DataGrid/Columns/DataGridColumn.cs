@@ -54,6 +54,12 @@ namespace ZyunUI
             this.InheritsWidth = true;
         }
 
+        internal int InitDisplayIndex(int index)
+        {
+            if(_displayIndex == -1)  _displayIndex = index;
+            return _displayIndex;
+        }
+
         public bool IsAutoCellHeight { get; set; } = false;
 
         /// <summary>
@@ -1077,7 +1083,8 @@ namespace ZyunUI
         internal DataGridCell CreateGridCell(object dataItem)
         {
             DataGridCell cell = new DataGridCell();
-            cell.SetStyleWithType(this.CellStyle);
+            cell.EnsureStyle(null);
+
             cell.Content =  GenerateElement(cell, dataItem);
             return cell;
         }

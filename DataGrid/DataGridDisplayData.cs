@@ -16,9 +16,10 @@ namespace ZyunUI.DataGridInternals
     {
         private DataGridRowHeader _headerCell = null;
         private List<DataGridCell> _cells;
-
+        private double _displayHeight;
         public DataGridRowVisuals()
         {
+            _displayHeight = 0;
             _cells = new List<DataGridCell>();
         }
 
@@ -30,23 +31,30 @@ namespace ZyunUI.DataGridInternals
             }
         }
 
-        internal DataGridRowHeader CreateHeaderCell(object header, Style style)
+        internal DataGridRowHeader CreateHeaderCell(Style style)
         {
             if (_headerCell == null)
             {
                 _headerCell = new DataGridRowHeader();
             }
-            _headerCell.Content = header;
             _headerCell.SetStyleWithType(style);
             return _headerCell;
         }
 
-        public int Count
+        public int CellCount
         {
             get
             {
                 return _cells.Count;
             }
+        }
+
+       
+
+        public double DisplayHeight
+        {
+            get { return _displayHeight; }
+            set { _displayHeight = value; }
         }
 
         public IEnumerator GetEnumerator()
@@ -82,13 +90,17 @@ namespace ZyunUI.DataGridInternals
 
         public void UpdateDataContext(object dataContext)
         {
-            _headerCell.DataContext = dataContext;
+            if (_headerCell != null)
+            {
+                _headerCell.DataContext = dataContext;
+            }
             for(int i = 0; i < _cells.Count; i++)
             {
                 DataGridCell cell = _cells[i];
                 cell.DataContext = dataContext;
             }
         }
+
     }
     internal class DataGridDisplayData
     {
@@ -101,15 +113,27 @@ namespace ZyunUI.DataGridInternals
             _owner = owner;
             _recyclableRows = new Stack<DataGridRowVisuals>();
             _displayedRows = new List<DataGridRowVisuals>();
+
+            FirstDisplayedCol = -1;
+            LastDisplayedCol = -1;
+
+            FirstDisplayedRow = -1;
+            LastDisplayedRow = -1;
         }
 
-        public int FirstDisplayedScrollingCol
+        internal double PendingVerticalScrollHeight
         {
             get;
             set;
         }
 
-        public int LastDisplayedScrollingCol
+        public int FirstDisplayedCol
+        {
+            get;
+            set;
+        }
+
+        public int LastDisplayedCol
         {
             get;
             set;
@@ -119,13 +143,13 @@ namespace ZyunUI.DataGridInternals
         public int FirstDisplayedRow
         {
             get;
-            set;
+            private set;
         }
 
         public int LastDisplayedRow
         {
             get;
-            set;
+            private set;
         }
 
       
@@ -161,16 +185,110 @@ namespace ZyunUI.DataGridInternals
             _displayedRows.Clear();
         }
 
-        internal DataGridRowVisuals GetUsedRow(object dataContext)
+        internal DataGridRowVisuals GetDisplayedRow(int displayIndex)
+        {
+            DiagnosticsDebug.Assert(displayIndex >= 0, "Expected slot greater than or equal to 0.");
+            DiagnosticsDebug.Assert(displayIndex < this.NumDisplayedRows, "Expected slot less than or equal to NumDisplayedRows.");
+
+            return _displayedRows[displayIndex];
+        }
+
+        internal DataGridRowVisuals GetUsedRow()
         {
             DataGridRowVisuals row = null;
             if (_recyclableRows.Count > 0)
             {
                 row = _recyclableRows.Pop();
-                row.UpdateDataContext(dataContext);
             }
             return row;
         }
 
+        private int GetDisplayIndex(int rowIndex)
+        {
+            return rowIndex - this.FirstDisplayedRow;
+        }
+
+        private DataGridRowVisuals RecycleRow(int displayIndex)
+        {
+            DiagnosticsDebug.Assert(displayIndex >= 0, "Expected slot greater than or equal to 0.");
+            DiagnosticsDebug.Assert(displayIndex < this.NumDisplayedRows, "Expected slot less than or equal to NumDisplayedRows.");
+
+            DataGridRowVisuals rowVisuals =  _displayedRows[displayIndex];
+            _displayedRows.RemoveAt(displayIndex);
+
+            AddRecylableRow(rowVisuals);
+            return rowVisuals;
+        }
+
+        internal void UpdateDisplayedRows(int newFirstDisplayedRow, int newLastDisplayedRow)
+        {
+            if (this.FirstDisplayedRow == -1 || this.LastDisplayedRow == -1 ||
+                newLastDisplayedRow < this.FirstDisplayedRow || newFirstDisplayedRow > this.LastDisplayedRow)
+            {
+                ClearElements(true);
+                _owner.RemoveAllDisplayedElement();
+
+                DataGridRowVisuals rowVisuals;
+                this.FirstDisplayedRow = newFirstDisplayedRow;
+                this.LastDisplayedRow = newLastDisplayedRow;
+                for(int i = 0; i < newLastDisplayedRow - newFirstDisplayedRow; i++)
+                {
+                    rowVisuals = _owner.GenerateRow(this.FirstDisplayedRow + i);
+                    _owner.InsertDisplayedElement(i, rowVisuals);
+                    _displayedRows.Insert(i, rowVisuals);
+                }
+            }
+            else
+            {
+                //前：下标索引小 后：下标索引大
+                DataGridRowVisuals rowVisuals;
+                int dist = this.LastDisplayedRow - newLastDisplayedRow;
+                if (dist > 0)
+                {
+                    //从前往后移除,总移除最后一项
+                    int displayIndex = GetDisplayIndex(LastDisplayedRow);
+                    for (int i = 0; i < dist; i++)
+                    {
+                        rowVisuals = RecycleRow(displayIndex - i);
+                        _owner.RemoveDisplayedElement(displayIndex - i, rowVisuals);
+                    }
+                }
+                else
+                {
+                    dist = -dist;
+                    int displayIndex = GetDisplayIndex(this.LastDisplayedRow + 1);
+                    for (int i = 0; i < dist; i++)
+                    {
+                        rowVisuals = _owner.GenerateRow(this.LastDisplayedRow + 1 + i);
+                        _owner.InsertDisplayedElement(displayIndex + i, rowVisuals);
+                        _displayedRows.Insert(displayIndex + i, rowVisuals);
+                    }
+                }
+                this.LastDisplayedRow = newLastDisplayedRow;
+
+                dist = this.FirstDisplayedRow - newFirstDisplayedRow;
+                if (dist > 0)
+                {
+                    for (int i = 0; i < dist; i++)
+                    {
+                        //从后往前添加，总添加在首项
+                        rowVisuals = _owner.GenerateRow(this.FirstDisplayedRow - 1 - i);
+                        _owner.InsertDisplayedElement(0, rowVisuals);
+                        _displayedRows.Insert(0, rowVisuals);
+                    }
+                }
+                else
+                {
+                    dist = -dist;
+                    for (int i = 0; i < dist; i++)
+                    {
+                        //从前往后移除
+                        rowVisuals = RecycleRow(0);
+                        _owner.RemoveDisplayedElement(0, rowVisuals);
+                    }
+                }
+                this.LastDisplayedRow = newFirstDisplayedRow;
+            }
+        }
     }
 }

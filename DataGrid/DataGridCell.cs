@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using ZyunUI.Utilities;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -26,6 +27,30 @@ namespace ZyunUI
             FrameworkElement element = this.Content as FrameworkElement;
             if (element != null) element.DataContext = dataContext;
             else this.DataContext = dataContext;
+        }
+
+        internal void EnsureStyle(Style previousStyle)
+        {
+            if (this.Style != null &&
+                (this.OwningColumn == null || this.Style != this.OwningColumn.CellStyle) &&
+                (this.OwningGrid == null || this.Style != this.OwningGrid.CellStyle) &&
+                this.Style != previousStyle)
+            {
+                return;
+            }
+
+            Style style = null;
+            if (this.OwningColumn != null)
+            {
+                style = this.OwningColumn.CellStyle;
+            }
+
+            if (style == null && this.OwningGrid != null)
+            {
+                style = this.OwningGrid.CellStyle;
+            }
+
+            this.SetStyleWithType(style);
         }
 
         internal int ColumnIndex

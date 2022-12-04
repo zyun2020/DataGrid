@@ -138,7 +138,9 @@ namespace ZyunUI
        
         private readonly List<DataGridRow> m_rows = new List<DataGridRow>();
         private DataGridCellCoordinates _currentCellCoordinates;
+        private Size? _datagridAvailableSize;
 
+        private FocusInputDeviceKind _focusInputDevice;
 
         /// <summary>
         /// Occurs when the <see cref="ZyunUI.Controls.DataGridColumn.DisplayIndex"/>
@@ -191,6 +193,10 @@ namespace ZyunUI
             this.ColumnHeaderInteractionInfo = new DataGridColumnHeaderInteractionInfo();
             this.ColumnsInternal = CreateColumnsInstance();
             this.DisplayData = new DataGridDisplayData(this);
+
+            _focusInputDevice = FocusInputDeviceKind.None;
+            _proposedScrollBarsState = ScrollBarVisualState.NoIndicator;
+            _proposedScrollBarsSeparatorState = ScrollBarsSeparatorVisualState.SeparatorCollapsed;
         }
 
         internal DataGridDisplayData DisplayData
@@ -217,6 +223,9 @@ namespace ZyunUI
         /// </summary>
         protected override void OnApplyTemplate()
         {
+            _hasNoIndicatorStateStoryboardCompletedHandler = false;
+            _keepScrollBarsShowing = false;
+
             if (_columnHeadersPresenter != null)
             {
                 // If we're applying a new template, we want to remove the old column headers first
@@ -319,6 +328,23 @@ namespace ZyunUI
         {
 
         }
+        internal bool IsMeasured { get { return _measured; } }
+
+        internal bool AreColumnHeadersVisible
+        {
+            get
+            {
+                return (this.HeadersVisibility & DataGridHeadersVisibility.Column) == DataGridHeadersVisibility.Column;
+            }
+        }
+
+        internal bool AreRowHeadersVisible
+        {
+            get
+            {
+                return (this.HeadersVisibility & DataGridHeadersVisibility.Row) == DataGridHeadersVisibility.Row;
+            }
+        }
 
         internal bool ContainsFocus
         {
@@ -356,36 +382,7 @@ namespace ZyunUI
             private set;
         }
 
-        private DataGridRowVisuals GenerateRow(int rowIndex)
-        {
-            DiagnosticsDebug.Assert(rowIndex >= 0, "Expected positive rowIndex.");
-
-            object dataItem = null;
-            if(rowIndex < CollectionView.Count)
-                dataItem = CollectionView[rowIndex];
-
-            DataGridRowVisuals row = DisplayData.GetUsedRow(dataItem);
-            if (row != null) return row;
-
-            FrameworkElement element;
-            var columns = Columns;
-            DataGridColumn dataGridColumn;
-            for (int i = 0; i < columns.Count; i++)
-            {
-                dataGridColumn = columns[i];
-
-                DataGridCell dataGridCell = new DataGridCell();
-                element = dataGridColumn.GenerateElementInternal(dataGridCell, dataItem);
-                element.SetStyleWithType(dataGridColumn.CellStyle);
-                dataGridCell.Content = element;
-
-                row.Insert(i, dataGridCell);
-            }
-
-            DataGridRowHeader headerCell = row.CreateHeaderCell(CellRef.ToRowName(rowIndex), RowHeaderColumn.CellStyle);
-         
-            return row;
-        }
+        
 
         internal int NoCurrentCellChangeCount
         {
@@ -448,7 +445,7 @@ namespace ZyunUI
 
                 _horizontalOffset = value;
 
-                this.DisplayData.FirstDisplayedScrollingCol = ComputeFirstVisibleScrollingColumn();
+                this.DisplayData.FirstDisplayedCol = ComputeFirstVisibleScrollingColumn();
 
                 // update the lastTotallyDisplayedScrollingCol
                 ComputeDisplayedColumns();
@@ -569,8 +566,6 @@ namespace ZyunUI
             if (this.ItemsSource != null)
             {
                 CollectionView.Source = this.ItemsSource;
-
-                //重新生成Columns
                 if (this.AutoGenerateColumns && this.Columns.Count == 0)
                 {
                     
@@ -586,10 +581,19 @@ namespace ZyunUI
         /// Gets the column definitions.
         /// </summary>
         /// <value>The column definitions.</value>
-        public ObservableCollection<DataGridColumn> Columns { get; } = new ObservableCollection<DataGridColumn>();
+        public ObservableCollection<DataGridColumn> Columns
+        {
+            get
+            {
+                // we use a backing field here because the field's type
+                // is a subclass of the property's
+                return this.ColumnsInternal;
+            }
+        }
+
         public List<DataGridRow> Rows { get; } = new List<DataGridRow>();
 
-        public DataGridColumn RowHeaderColumn { get; }  
+        public DataGridTextColumn RowHeaderColumn { get; } = new DataGridTextColumn();
 
         public int RowCount => Rows.Count;
         public int ColumnCount => Columns.Count;
@@ -650,29 +654,47 @@ namespace ZyunUI
             }
             else
             {
-                //1. 先计算RowHeaderWidth
-                MeasureRowHeaders();
-                double measureWidth = availableSize.Width;
-                if (!Double.IsNaN(measureWidth))
+                bool invalidate = !this._datagridAvailableSize.HasValue || availableSize.Width != this._datagridAvailableSize.Value.Width;
+                _datagridAvailableSize = availableSize;
+                if (invalidate)
                 {
-                    measureWidth -= ActualRowHeaderWidth;
-                    
+                    Refresh();
                 }
-                //2. ColumnHeaders
-                MeasureColumnHeaders(measureWidth);
-                //3. Cells
-                MeasureCells(measureWidth);
-
-                ViewportWidth = measureWidth;
-                ViewportHeight = availableSize.Height;
-                if (!Double.IsNaN(ViewportHeight))
-                {
-                    ViewportHeight -= ActualColumnHeaderHeight;
-                }
-                ComputeScrollBarsLayout();
             }
 
             return base.MeasureOverride(availableSize);
+        }
+
+        internal void Refresh()
+        {
+            if (!_datagridAvailableSize.HasValue) return;
+            Size availableSize = _datagridAvailableSize.Value;
+
+            //1. 先计算RowHeaderWidth
+            MeasureRowHeaders();
+            double measureWidth = availableSize.Width;
+            if (!Double.IsNaN(measureWidth))
+            {
+                measureWidth -= ActualRowHeaderWidth;
+
+            }
+            //2. ColumnHeaders
+            MeasureColumnHeaders(measureWidth);
+            //3. Cells
+            MeasureCells(measureWidth);
+
+            ViewportWidth = measureWidth;
+            ViewportHeight = availableSize.Height;
+            if (!Double.IsNaN(ViewportHeight))
+            {
+                ViewportHeight -= ActualColumnHeaderHeight;
+            }
+
+            UpdateDisplayedColumns();
+            UpdateDisplayedRows(0, ViewportHeight);
+
+            ComputeScrollBarsLayout();
+            ShowScrollBars();
         }
 
         internal void MeasureCells(double measureWidth)
@@ -763,15 +785,17 @@ namespace ZyunUI
             if (Double.IsInfinity(measureWidth)) bFinityWidth = false;
 
             double height = this.ColumnHeaderHeight;
+            Size measureSize = new Size(0, height);
             bool autoSizeHeight = false;
             if (double.IsNaN(height))
             {
                 autoSizeHeight = true;
                 height = 0;
+                measureSize.Height = Double.PositiveInfinity;
             }
              
             var columns = ColumnsInternal.GetDisplayedColumns();           
-            Size measureSize = new Size(0, ColumnHeaderHeight);
+            
             Size desiredSize = new Size();
             double usedWidth = 0;
             double starsToDistribute = 0;
@@ -931,6 +955,8 @@ namespace ZyunUI
             AdvancedCollectionView collectionView = CollectionView;
 
             DataGridCell gridCell = column.CreateGridCell(null);
+            _cellsPresenter.Children.Add(gridCell);
+           
             double width = 0;
 
             Size desiredSize = new Size();
@@ -939,7 +965,7 @@ namespace ZyunUI
             {
                 row = rows[i];
                 isMeaseureRow = false;
-                if (column.IsAutoCellHeight || (Double.IsInfinity(this.RowHeight) && Double.IsInfinity(row.Height)))
+                if (column.IsAutoCellHeight || (Double.IsNaN(this.RowHeight) && Double.IsNaN(row.Height)))
                 {
                     isMeaseureRow = true;
                 }
@@ -947,7 +973,7 @@ namespace ZyunUI
                 if (isMeaseureCol || isMeaseureRow)
                 {
                     dataItem = collectionView[i];
-                    gridCell.SetContentDataContext(dataItem);
+                    gridCell.DataContext = dataItem;
                      
                     gridCell.Measure(measureSize);
                     desiredSize = gridCell.DesiredSize;
@@ -973,7 +999,11 @@ namespace ZyunUI
                 }
             }
 
-            if (width < column.ActualMinWidth) width = column.ActualMinWidth;
+            if (width < column.ActualWidth) width = column.ActualWidth;
+            else if (width < column.ActualMinWidth) width = column.ActualMinWidth;
+
+            _cellsPresenter.Children.Remove(gridCell);
+
             return width;
         }
 
@@ -1072,6 +1102,24 @@ namespace ZyunUI
             }
         }
 
+        private bool AreAllScrollBarsCollapsed
+        {
+            get
+            {
+                return (_hScrollBar == null || _hScrollBar.Visibility == Visibility.Collapsed) &&
+                       (_vScrollBar == null || _vScrollBar.Visibility == Visibility.Collapsed);
+            }
+        }
+
+        private bool AreBothScrollBarsVisible
+        {
+            get
+            {
+                return _hScrollBar != null && _hScrollBar.Visibility == Visibility.Visible &&
+                       _vScrollBar != null && _vScrollBar.Visibility == Visibility.Visible;
+            }
+        }
+
         private void UpdateHorizontalScrollBar(bool needHorizScrollBar, bool forceHorizScrollBar, double totalVisibleWidth, double totalVisibleFrozenWidth, double cellsWidth)
         {
             if (_hScrollBar != null)
@@ -1109,7 +1157,7 @@ namespace ZyunUI
 
                         // The ScrollBar should be in sync with HorizontalOffset at this point.  There's a resize case
                         // where the ScrollBar will coerce an old value here, but we don't want that.
-                        //SetHorizontalOffset(_horizontalOffset);
+                        SetHorizontalOffset(_horizontalOffset);
 
                         _hScrollBar.IsEnabled = true;
                     }
