@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -231,7 +232,7 @@ namespace ZyunUI.DataGridInternals
                 DataGridRowVisuals rowVisuals;
                 this.FirstDisplayedRow = newFirstDisplayedRow;
                 this.LastDisplayedRow = newLastDisplayedRow;
-                for(int i = 0; i < newLastDisplayedRow - newFirstDisplayedRow; i++)
+                for(int i = 0; i <= newLastDisplayedRow - newFirstDisplayedRow; i++)
                 {
                     rowVisuals = _owner.GenerateRow(this.FirstDisplayedRow + i);
                     _owner.InsertDisplayedElement(i, rowVisuals);
@@ -240,55 +241,64 @@ namespace ZyunUI.DataGridInternals
             }
             else
             {
-                //前：下标索引小 后：下标索引大
-                DataGridRowVisuals rowVisuals;
-                int dist = this.LastDisplayedRow - newLastDisplayedRow;
-                if (dist > 0)
+                try
                 {
-                    //从前往后移除,总移除最后一项
-                    int displayIndex = GetDisplayIndex(LastDisplayedRow);
-                    for (int i = 0; i < dist; i++)
+                    //前：下标索引小 后：下标索引大
+                    DataGridRowVisuals rowVisuals;
+                    int dist = this.LastDisplayedRow - newLastDisplayedRow;
+                    if (dist > 0)
                     {
-                        rowVisuals = RecycleRow(displayIndex - i);
-                        _owner.RemoveDisplayedElement(displayIndex - i, rowVisuals);
+                        //从前往后移除,总移除最后一项
+                        int displayIndex = GetDisplayIndex(LastDisplayedRow);
+                        for (int i = 0; i < dist; i++)
+                        {
+                            rowVisuals = RecycleRow(displayIndex - i);
+                            _owner.RemoveDisplayedElement(displayIndex - i, rowVisuals);
+                        }
                     }
-                }
-                else
-                {
-                    dist = -dist;
-                    int displayIndex = GetDisplayIndex(this.LastDisplayedRow + 1);
-                    for (int i = 0; i < dist; i++)
+                    else
                     {
-                        rowVisuals = _owner.GenerateRow(this.LastDisplayedRow + 1 + i);
-                        _owner.InsertDisplayedElement(displayIndex + i, rowVisuals);
-                        _displayedRows.Insert(displayIndex + i, rowVisuals);
+                        dist = -dist;
+                        int displayIndex = GetDisplayIndex(this.LastDisplayedRow + 1);
+                        for (int i = 0; i < dist; i++)
+                        {
+                            rowVisuals = _owner.GenerateRow(this.LastDisplayedRow + 1 + i);
+                            _owner.InsertDisplayedElement(displayIndex + i, rowVisuals);
+                            _displayedRows.Insert(displayIndex + i, rowVisuals);
+                        }
                     }
-                }
-                this.LastDisplayedRow = newLastDisplayedRow;
+                  
+                    dist = this.FirstDisplayedRow - newFirstDisplayedRow;
+                    if (dist > 0)
+                    {
+                        for (int i = 0; i < dist; i++)
+                        {
+                            //从后往前添加，总添加在首项
+                            rowVisuals = _owner.GenerateRow(this.FirstDisplayedRow - 1 - i);
+                            _owner.InsertDisplayedElement(0, rowVisuals);
+                            _displayedRows.Insert(0, rowVisuals);
+                        }
+                    }
+                    else
+                    {
+                        dist = -dist;
+                        for (int i = 0; i < dist; i++)
+                        {
+                            //从前往后移除
+                            rowVisuals = RecycleRow(0);
+                            _owner.RemoveDisplayedElement(0, rowVisuals);
+                        }
+                    }
 
-                dist = this.FirstDisplayedRow - newFirstDisplayedRow;
-                if (dist > 0)
-                {
-                    for (int i = 0; i < dist; i++)
-                    {
-                        //从后往前添加，总添加在首项
-                        rowVisuals = _owner.GenerateRow(this.FirstDisplayedRow - 1 - i);
-                        _owner.InsertDisplayedElement(0, rowVisuals);
-                        _displayedRows.Insert(0, rowVisuals);
-                    }
+                    this.FirstDisplayedRow = newFirstDisplayedRow;
+                    this.LastDisplayedRow = newLastDisplayedRow;
                 }
-                else
+                catch(Exception ex)
                 {
-                    dist = -dist;
-                    for (int i = 0; i < dist; i++)
-                    {
-                        //从前往后移除
-                        rowVisuals = RecycleRow(0);
-                        _owner.RemoveDisplayedElement(0, rowVisuals);
-                    }
+                    Debug.Write(ex.ToString());
                 }
-                this.LastDisplayedRow = newFirstDisplayedRow;
             }
+
         }
     }
 }

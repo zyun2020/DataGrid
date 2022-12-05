@@ -459,7 +459,7 @@ namespace ZyunUI
         {
             if (column.OwningGrid != null && column.OwningGrid.ColumnsInternal != null && column.OwningGrid.UsesStarSizing &&
                 (column.OwningGrid.ColumnsInternal.LastVisibleColumn == column ||
-                !DoubleUtil.AreClose(column.OwningGrid.ColumnsInternal.VisibleEdgedColumnsWidth, column.OwningGrid.ViewportWidth)))
+                !DoubleUtil.AreClose(column.OwningGrid.ColumnsInternal.VisibleEdgedColumnsWidth, column.OwningGrid.CellsViewWidth)))
             {
                 return false;
             }
@@ -815,7 +815,7 @@ namespace ZyunUI
             double leftEdge = 0;
 
             DataGridColumnHeaderInteractionInfo interactionInfo = this.OwningGrid.ColumnHeaderInteractionInfo;
-            double rightEdge = this.OwningGrid.ViewportWidth;
+            double rightEdge = this.OwningGrid.CellsViewWidth;
             if (this.OwningColumn.IsFrozen)
             {
                 rightEdge = Math.Min(rightEdge, interactionInfo.FrozenColumnsWidth);

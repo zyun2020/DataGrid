@@ -235,6 +235,19 @@ namespace ZyunUI
             DiagnosticsDebug.Assert(rowIndex >= 0 && rowIndex < RowCount, "Expected positive rowIndex.");
             return Rows[rowIndex].ActualHeight;
         }
+
+        private double GetRowsActualHeight(int fromRow, int toRow)
+        {
+            DiagnosticsDebug.Assert(toRow >= fromRow, "Expected toSlot greater or equal to fromSlot.");
+
+            double height = 0;
+            for (int row = fromRow; row <= toRow; row++)
+            {
+                height += Rows[row].ActualHeight;
+            }
+            return height;
+        }
+
         internal DataGridRowVisuals GenerateRow(int rowIndex)
         {
             DiagnosticsDebug.Assert(rowIndex >= 0, "Expected positive rowIndex.");
@@ -317,8 +330,8 @@ namespace ZyunUI
             {
                 for (int i = 0; i < rowVisuals.CellCount; i++)
                 {
-                    DiagnosticsDebug.Assert(_cellsPresenter.Children[cellIndex + i] == rowVisuals[cellIndex + i], "RemoveDisplayedElement cells.");
-                    _cellsPresenter.Children.RemoveAt(cellIndex + i);
+                    DiagnosticsDebug.Assert(_cellsPresenter.Children[cellIndex] == rowVisuals[i], "RemoveDisplayedElement cells.");
+                    _cellsPresenter.Children.RemoveAt(cellIndex);
                 }
             }
         }
@@ -389,7 +402,43 @@ namespace ZyunUI
             DisplayData.UpdateDisplayedRows(firstDisplayedScrollingRow, lastDisplayedScrollingRow);
         }
 
-       
+        private void UpdateDisplayedRowsFromBottom(int newLastDisplayedScrollingRow)
+        {
+            int lastDisplayedScrollingRow = newLastDisplayedScrollingRow;
+            int firstDisplayedScrollingRow = -1;
+            double displayHeight = this.CellsViewHeight;
+            double deltaY = 0;
+            int visibleScrollingRows = 0;
+
+            if (DoubleUtil.LessThanOrClose(displayHeight, 0) || this.RowCount == 0 || this.ColumnsItemsInternal.Count == 0)
+            {
+                this.ResetDisplayedRows();
+                return;
+            }
+
+            if (lastDisplayedScrollingRow == -1)
+            {
+                lastDisplayedScrollingRow = 0;
+            }
+
+            int rowIndex = lastDisplayedScrollingRow;
+            while (DoubleUtil.LessThan(deltaY, displayHeight) && rowIndex >= 0)
+            {
+                deltaY += GetRowActualHeight(rowIndex);
+                visibleScrollingRows++;
+                firstDisplayedScrollingRow = rowIndex;
+                rowIndex--;
+            }
+            this.NegVerticalOffset = Math.Max(0, deltaY - displayHeight);
+
+            DisplayData.UpdateDisplayedRows(firstDisplayedScrollingRow, lastDisplayedScrollingRow);
+        }
+
+        private void ResetDisplayedRows()
+        {
+            this.DisplayData.ClearElements(true /*recycleRows*/);
+            this.AvailableSlotElementRoom = this.CellsViewHeight;
+        }
     }
    
 }

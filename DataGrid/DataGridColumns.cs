@@ -75,7 +75,7 @@ namespace ZyunUI
                 {
                     totalColumnsWidth += column.ActualWidth;
 
-                    column.HeaderCell.SeparatorVisibility = (column != this.ColumnsInternal.LastVisibleColumn || totalColumnsWidth < this.ViewportWidth) ?
+                    column.HeaderCell.SeparatorVisibility = (column != this.ColumnsInternal.LastVisibleColumn || totalColumnsWidth < this.CellsViewWidth) ?
                         Visibility.Visible : Visibility.Collapsed;
                 }
             }
@@ -853,7 +853,7 @@ namespace ZyunUI
         {
             bool invalidate = false;
             int visibleScrollingColumnsTmp = 0;
-            double displayWidth = this.ViewportWidth;
+            double displayWidth = this.CellsViewWidth;
             double cx = 0;
             int firstDisplayedFrozenCol = -1;
             int firstDisplayedScrollingCol = this.DisplayData.FirstDisplayedCol;
@@ -1019,7 +1019,7 @@ namespace ZyunUI
 
         private int ComputeFirstVisibleScrollingColumn()
         {
-            if (this.ColumnsInternal.GetVisibleFrozenEdgedColumnsWidth() >= this.ViewportWidth)
+            if (this.ColumnsInternal.GetVisibleFrozenEdgedColumnsWidth() >= this.CellsViewWidth)
             {
                 // Not enough room for scrolling columns.
                 _negHorizontalOffset = 0;

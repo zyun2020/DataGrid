@@ -8,6 +8,9 @@ using System.ComponentModel.DataAnnotations;
 using ZyunUI.Utilities;
 using DispatcherQueueTimer = Microsoft.UI.Dispatching.DispatcherQueueTimer;
 using DiagnosticsDebug = System.Diagnostics.Debug;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Controls;
 
 namespace ZyunUI
 {
@@ -16,7 +19,8 @@ namespace ZyunUI
         // the sum of the widths in pixels of the scrolling columns preceding
         // the first displayed scrolling column
         private double _horizontalOffset;
-        private byte _horizontalScrollChangesIgnored;
+       
+
         private bool _ignoreNextScrollBarsLayout;
         private List<ValidationResult> _indeiValidationResults;
         private bool _initializingNewItem;
@@ -30,7 +34,9 @@ namespace ZyunUI
         private bool _preferMouseIndicators;
 
         private bool _hasNoIndicatorStateStoryboardCompletedHandler;
+
         private byte _verticalScrollChangesIgnored;
+        private byte _horizontalScrollChangesIgnored;
 
         private bool _isHorizontalScrollBarInteracting;
         private bool _isVerticalScrollBarInteracting;
@@ -51,171 +57,6 @@ namespace ZyunUI
         // set as the rows were scrolled off.
         private double _verticalOffset;
 
-       
-
-        private bool IsHorizontalScrollBarInteracting
-        {
-            get
-            {
-                return _isHorizontalScrollBarInteracting;
-            }
-
-            set
-            {
-                if (_isHorizontalScrollBarInteracting != value)
-                {
-                    _isHorizontalScrollBarInteracting = value;
-
-                    if (_hScrollBar != null)
-                    {
-                        if (_isHorizontalScrollBarInteracting)
-                        {
-                            // Prevent the vertical scroll bar from fading out while the user is interacting with the horizontal one.
-                            _keepScrollBarsShowing = true;
-
-                            ShowScrollBars();
-                        }
-                        else
-                        {
-                            // Make the scroll bars fade out, after the normal delay.
-                            _keepScrollBarsShowing = false;
-
-                            HideScrollBars(true /*useTransitions*/);
-                        }
-                    }
-                }
-            }
-        }
-
-        private bool IsVerticalScrollBarInteracting
-        {
-            get
-            {
-                return _isVerticalScrollBarInteracting;
-            }
-
-            set
-            {
-                if (_isVerticalScrollBarInteracting != value)
-                {
-                    _isVerticalScrollBarInteracting = value;
-
-                    if (_vScrollBar != null)
-                    {
-                        if (_isVerticalScrollBarInteracting)
-                        {
-                            // Prevent the horizontal scroll bar from fading out while the user is interacting with the vertical one.
-                            _keepScrollBarsShowing = true;
-
-                            ShowScrollBars();
-                        }
-                        else
-                        {
-                            // Make the scroll bars fade out, after the normal delay.
-                            _keepScrollBarsShowing = false;
-
-                            HideScrollBars(true /*useTransitions*/);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Calculates the amount to scroll for the ScrollLeft button
-        // This is a method rather than a property to emphasize a calculation
-        private double GetHorizontalSmallScrollDecrease()
-        {
-            // If the first column is covered up, scroll to the start of it when the user clicks the left button
-            if (_negHorizontalOffset > 0)
-            {
-                return _negHorizontalOffset;
-            }
-            else
-            {
-                // The entire first column is displayed, show the entire previous column when the user clicks
-                // the left button
-                DataGridColumn previousColumn = this.ColumnsInternal.GetPreviousVisibleScrollingColumn(
-                    this.ColumnsItemsInternal[DisplayData.FirstDisplayedCol]);
-                if (previousColumn != null)
-                {
-                    return GetEdgedColumnWidth(previousColumn);
-                }
-                else
-                {
-                    // There's no previous column so don't move
-                    return 0;
-                }
-            }
-        }
-
-        // Calculates the amount to scroll for the ScrollRight button
-        // This is a method rather than a property to emphasize a calculation
-        private double GetHorizontalSmallScrollIncrease()
-        {
-            if (this.DisplayData.FirstDisplayedCol >= 0)
-            {
-                return GetEdgedColumnWidth(this.ColumnsItemsInternal[DisplayData.FirstDisplayedCol]) - _negHorizontalOffset;
-            }
-
-            return 0;
-        }
-
-        // Calculates the amount the ScrollDown button should scroll
-        // This is a method rather than a property to emphasize that calculations are taking place
-        private double GetVerticalSmallScrollIncrease()
-        {
-            if (this.DisplayData.FirstDisplayedRow >= 0)
-            {
-                return GetRowActualHeight(this.DisplayData.FirstDisplayedRow) - this.NegVerticalOffset;
-            }
-
-            return 0;
-        }
-
-        private void HideScrollBars(bool useTransitions)
-        {
-            if (!_keepScrollBarsShowing)
-            {
-                _proposedScrollBarsState = ScrollBarVisualState.NoIndicator;
-                _proposedScrollBarsSeparatorState = UISettingsHelper.AreSettingsEnablingAnimations ? ScrollBarsSeparatorVisualState.SeparatorCollapsed : ScrollBarsSeparatorVisualState.SeparatorCollapsedWithoutAnimation;
-                if (UISettingsHelper.AreSettingsAutoHidingScrollBars)
-                {
-                    SwitchScrollBarsVisualStates(_proposedScrollBarsState, _proposedScrollBarsSeparatorState, useTransitions);
-                }
-            }
-        }
-
-        private void HideScrollBarsAfterDelay()
-        {
-            if (!_keepScrollBarsShowing)
-            {
-                DispatcherQueueTimer hideScrollBarsTimer = null;
-
-                if (_hideScrollBarsTimer != null)
-                {
-                    hideScrollBarsTimer = _hideScrollBarsTimer;
-                    if (hideScrollBarsTimer.IsRunning)
-                    {
-                        hideScrollBarsTimer.Stop();
-                    }
-                }
-                else
-                {
-                    hideScrollBarsTimer = DispatcherQueue.CreateTimer();
-                    hideScrollBarsTimer.Interval = TimeSpan.FromMilliseconds(DATAGRID_noScrollBarCountdownMs);
-                    hideScrollBarsTimer.Tick += HideScrollBarsTimerTick;
-                    _hideScrollBarsTimer = hideScrollBarsTimer;
-                }
-
-                hideScrollBarsTimer.Start();
-            }
-        }
-
-        private void HideScrollBarsTimerTick(object sender, object e)
-        {
-            StopHideScrollBarsTimer();
-            HideScrollBars(true /*useTransitions*/);
-        }
         private void HookHorizontalScrollBarEvents()
         {
             if (_hScrollBar != null)
@@ -233,6 +74,26 @@ namespace ZyunUI
                 _vScrollBar.Scroll += new ScrollEventHandler(VerticalScrollBar_Scroll);
                 _vScrollBar.PointerEntered += new PointerEventHandler(VerticalScrollBar_PointerEntered);
                 _vScrollBar.PointerExited += new PointerEventHandler(VerticalScrollBar_PointerExited);
+            }
+        }
+
+        private void UnhookHorizontalScrollBarEvents()
+        {
+            if (_hScrollBar != null)
+            {
+                _hScrollBar.Scroll -= new ScrollEventHandler(HorizontalScrollBar_Scroll);
+                _hScrollBar.PointerEntered -= new PointerEventHandler(HorizontalScrollBar_PointerEntered);
+                _hScrollBar.PointerExited -= new PointerEventHandler(HorizontalScrollBar_PointerExited);
+            }
+        }
+
+        private void UnhookVerticalScrollBarEvents()
+        {
+            if (_vScrollBar != null)
+            {
+                _vScrollBar.Scroll -= new ScrollEventHandler(VerticalScrollBar_Scroll);
+                _vScrollBar.PointerEntered -= new PointerEventHandler(VerticalScrollBar_PointerEntered);
+                _vScrollBar.PointerExited -= new PointerEventHandler(VerticalScrollBar_PointerExited);
             }
         }
 
@@ -267,7 +128,15 @@ namespace ZyunUI
             _isPointerOverVerticalScrollBar = false;
             HideScrollBarsAfterDelay();
         }
+        private void HorizontalScrollBar_Scroll(object sender, ScrollEventArgs e)
+        {
+            ProcessHorizontalScroll(e.ScrollEventType);
+        }
 
+        private void VerticalScrollBar_Scroll(object sender, ScrollEventArgs e)
+        {
+            ProcessVerticalScroll(e.ScrollEventType);
+        }
         internal void ProcessHorizontalScroll(ScrollEventType scrollEventType)
         {
             if (scrollEventType == ScrollEventType.EndScroll)
@@ -358,11 +227,11 @@ namespace ZyunUI
                     }
                     else
                     {
-                        //int previousScrollingSlot = this.GetPreviousVisibleSlot(this.DisplayData.FirstScrollingSlot);
-                        //if (previousScrollingSlot >= 0)
-                        //{
-                        //    ScrollSlotIntoView(previousScrollingSlot, false /*scrolledHorizontally*/);
-                        //}
+                        int previousDispalyedRow = this.DisplayData.FirstDisplayedRow - 1;
+                        if (previousDispalyedRow >= 0)
+                        {
+                            ScrollRowIntoView(previousDispalyedRow, false /*scrolledHorizontally*/);
+                        }
 
                         return;
                     }
@@ -375,8 +244,7 @@ namespace ZyunUI
                 if (!DoubleUtil.IsZero(this.DisplayData.PendingVerticalScrollHeight))
                 {
                     // Invalidate so the scroll happens on idle
-                    //InvalidateRowsMeasure(false /*invalidateIndividualElements*/);
-                }
+                    InvalidateCellsMeasure();                }
             }
             finally
             {
@@ -384,14 +252,188 @@ namespace ZyunUI
             }
         }
 
-        private void HorizontalScrollBar_Scroll(object sender, ScrollEventArgs e)
+        internal bool ProcessScrollOffsetDelta(double offsetDelta, bool isForHorizontalScroll)
         {
-            ProcessHorizontalScroll(e.ScrollEventType);
+            if (this.IsEnabled && this.DisplayData.NumDisplayedRows > 0)
+            {
+                if (isForHorizontalScroll)
+                {
+                    double newHorizontalOffset = this.HorizontalOffset + offsetDelta;
+                    if (newHorizontalOffset < 0)
+                    {
+                        newHorizontalOffset = 0;
+                    }
+
+                    double maxHorizontalOffset = Math.Max(0, this.ColumnsInternal.VisibleEdgedColumnsWidth - this.CellsViewWidth);
+                    if (newHorizontalOffset > maxHorizontalOffset)
+                    {
+                        newHorizontalOffset = maxHorizontalOffset;
+                    }
+
+                    if (newHorizontalOffset != this.HorizontalOffset)
+                    {
+                        UpdateHorizontalOffset(newHorizontalOffset);
+                        return true;
+                    }
+                }
+                else
+                {
+                    if (offsetDelta < 0)
+                    {
+                        offsetDelta = Math.Max(-_verticalOffset, offsetDelta);
+                    }
+                    else if (offsetDelta > 0)
+                    {
+                        if (_vScrollBar != null && this.VerticalScrollBarVisibility == ScrollBarVisibility.Visible)
+                        {
+                            offsetDelta = Math.Min(Math.Max(0, _vScrollBar.Maximum - _verticalOffset), offsetDelta);
+                        }
+                        else
+                        {
+                            double maximum = this.VisibleEdgedRowsHeight - this.CellsViewHeight;
+                            offsetDelta = Math.Min(Math.Max(0, maximum - _verticalOffset), offsetDelta);
+                        }
+                    }
+
+                    if (offsetDelta != 0)
+                    {
+                        this.DisplayData.PendingVerticalScrollHeight = offsetDelta;
+                        InvalidateCellsMeasure();
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+        private bool IsHorizontalScrollBarInteracting
+        {
+            get
+            {
+                return _isHorizontalScrollBarInteracting;
+            }
+
+            set
+            {
+                if (_isHorizontalScrollBarInteracting != value)
+                {
+                    _isHorizontalScrollBarInteracting = value;
+
+                    if (_hScrollBar != null)
+                    {
+                        if (_isHorizontalScrollBarInteracting)
+                        {
+                            // Prevent the vertical scroll bar from fading out while the user is interacting with the horizontal one.
+                            _keepScrollBarsShowing = true;
+
+                            ShowScrollBars();
+                        }
+                        else
+                        {
+                            // Make the scroll bars fade out, after the normal delay.
+                            _keepScrollBarsShowing = false;
+
+                            HideScrollBars(true /*useTransitions*/);
+                        }
+                    }
+                }
+            }
         }
 
-        private void VerticalScrollBar_Scroll(object sender, ScrollEventArgs e)
+        private bool IsVerticalScrollBarInteracting
         {
-            ProcessVerticalScroll(e.ScrollEventType);
+            get
+            {
+                return _isVerticalScrollBarInteracting;
+            }
+
+            set
+            {
+                if (_isVerticalScrollBarInteracting != value)
+                {
+                    _isVerticalScrollBarInteracting = value;
+
+                    if (_vScrollBar != null)
+                    {
+                        if (_isVerticalScrollBarInteracting)
+                        {
+                            // Prevent the horizontal scroll bar from fading out while the user is interacting with the vertical one.
+                            _keepScrollBarsShowing = true;
+
+                            ShowScrollBars();
+                        }
+                        else
+                        {
+                            // Make the scroll bars fade out, after the normal delay.
+                            _keepScrollBarsShowing = false;
+
+                            HideScrollBars(true /*useTransitions*/);
+                        }
+                    }
+                }
+            }
+        }
+
+        internal void OnPendingVerticalScroll()
+        {
+            if (!DoubleUtil.IsZero(this.DisplayData.PendingVerticalScrollHeight))
+            {
+                ScrollSlotsByHeight(this.DisplayData.PendingVerticalScrollHeight);
+                this.DisplayData.PendingVerticalScrollHeight = 0;
+            }
+        }
+
+        private void IndicatorStateStoryboardCompleted(FrameworkElement root)
+        {
+            if (root != null)
+            {
+                IList<VisualStateGroup> rootVisualStateGroups = VisualStateManager.GetVisualStateGroups(root);
+
+                if (rootVisualStateGroups != null)
+                {
+                    int groupCount = rootVisualStateGroups.Count;
+
+                    for (int groupIndex = 0; groupIndex < groupCount; groupIndex++)
+                    {
+                        VisualStateGroup group = rootVisualStateGroups[groupIndex];
+
+                        if (group != null)
+                        {
+                            IList<VisualState> visualStates = group.States;
+
+                            if (visualStates != null)
+                            {
+                                int stateCount = visualStates.Count;
+
+                                for (int stateIndex = 0; stateIndex < stateCount; stateIndex++)
+                                {
+                                    VisualState state = visualStates[stateIndex];
+
+                                    if (state != null)
+                                    {
+                                        string stateName = state.Name;
+                                        Storyboard stateStoryboard = state.Storyboard;
+
+                                        if (stateStoryboard != null)
+                                        {
+                                            if (stateName == VisualStates.StateNoIndicator)
+                                            {
+                                                stateStoryboard.Completed += NoIndicatorStateStoryboard_Completed;
+
+                                                _hasNoIndicatorStateStoryboardCompletedHandler = true;
+                                            }
+                                            else if (stateName == VisualStates.StateTouchIndicator || stateName == VisualStates.StateMouseIndicator || stateName == VisualStates.StateMouseIndicatorFull)
+                                            {
+                                                stateStoryboard.Completed += IndicatorStateStoryboard_Completed;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private void IndicatorStateStoryboard_Completed(object sender, object e)
@@ -414,6 +456,106 @@ namespace ZyunUI
                 }
             }
         }
+
+        private void NoIndicatorStateStoryboard_Completed(object sender, object e)
+        {
+            DiagnosticsDebug.Assert(_hasNoIndicatorStateStoryboardCompletedHandler, "Expected _hasNoIndicatorStateStoryboardCompletedHandler is true.");
+
+            _showingMouseIndicators = false;
+        }
+
+        // Calculates the amount to scroll for the ScrollLeft button
+        // This is a method rather than a property to emphasize a calculation
+        private double GetHorizontalSmallScrollDecrease()
+        {
+            // If the first column is covered up, scroll to the start of it when the user clicks the left button
+            if (_negHorizontalOffset > 0)
+            {
+                return _negHorizontalOffset;
+            }
+            else
+            {
+                // The entire first column is displayed, show the entire previous column when the user clicks
+                // the left button
+                DataGridColumn previousColumn = this.ColumnsInternal.GetPreviousVisibleScrollingColumn(
+                    this.ColumnsItemsInternal[DisplayData.FirstDisplayedCol]);
+                if (previousColumn != null)
+                {
+                    return GetEdgedColumnWidth(previousColumn);
+                }
+                else
+                {
+                    // There's no previous column so don't move
+                    return 0;
+                }
+            }
+        }
+
+        // Calculates the amount to scroll for the ScrollRight button
+        // This is a method rather than a property to emphasize a calculation
+        private double GetHorizontalSmallScrollIncrease()
+        {
+            if (this.DisplayData.FirstDisplayedCol >= 0)
+            {
+                return GetEdgedColumnWidth(this.ColumnsItemsInternal[DisplayData.FirstDisplayedCol]) - _negHorizontalOffset;
+            }
+
+            return 0;
+        }
+
+        // Calculates the amount the ScrollDown button should scroll
+        // This is a method rather than a property to emphasize that calculations are taking place
+        private double GetVerticalSmallScrollIncrease()
+        {
+            if (this.DisplayData.FirstDisplayedRow >= 0)
+            {
+                return GetRowActualHeight(this.DisplayData.FirstDisplayedRow) - this.NegVerticalOffset;
+            }
+
+            return 0;
+        }
+
+        private void HideScrollBarsAfterDelay()
+        {
+            if (!_keepScrollBarsShowing)
+            {
+                DispatcherQueueTimer hideScrollBarsTimer = null;
+
+                if (_hideScrollBarsTimer != null)
+                {
+                    hideScrollBarsTimer = _hideScrollBarsTimer;
+                    if (hideScrollBarsTimer.IsRunning)
+                    {
+                        hideScrollBarsTimer.Stop();
+                    }
+                }
+                else
+                {
+                    hideScrollBarsTimer = DispatcherQueue.CreateTimer();
+                    hideScrollBarsTimer.Interval = TimeSpan.FromMilliseconds(DATAGRID_noScrollBarCountdownMs);
+                    hideScrollBarsTimer.Tick += HideScrollBarsTimerTick;
+                    _hideScrollBarsTimer = hideScrollBarsTimer;
+                }
+
+                hideScrollBarsTimer.Start();
+            }
+        }
+
+        private void StopHideScrollBarsTimer()
+        {
+            if (_hideScrollBarsTimer != null && _hideScrollBarsTimer.IsRunning)
+            {
+                _hideScrollBarsTimer.Stop();
+            }
+        }
+
+        private void HideScrollBarsTimerTick(object sender, object e)
+        {
+            StopHideScrollBarsTimer();
+            HideScrollBars(true /*useTransitions*/);
+        }
+       
+       
         private void ShowScrollBars()
         {
             if (this.AreAllScrollBarsCollapsed)
@@ -504,11 +646,16 @@ namespace ZyunUI
             }
         }
 
-        private void StopHideScrollBarsTimer()
+        private void HideScrollBars(bool useTransitions)
         {
-            if (_hideScrollBarsTimer != null && _hideScrollBarsTimer.IsRunning)
+            if (!_keepScrollBarsShowing)
             {
-                _hideScrollBarsTimer.Stop();
+                _proposedScrollBarsState = ScrollBarVisualState.NoIndicator;
+                _proposedScrollBarsSeparatorState = UISettingsHelper.AreSettingsEnablingAnimations ? ScrollBarsSeparatorVisualState.SeparatorCollapsed : ScrollBarsSeparatorVisualState.SeparatorCollapsedWithoutAnimation;
+                if (UISettingsHelper.AreSettingsAutoHidingScrollBars)
+                {
+                    SwitchScrollBarsVisualStates(_proposedScrollBarsState, _proposedScrollBarsSeparatorState, useTransitions);
+                }
             }
         }
 
@@ -553,26 +700,6 @@ namespace ZyunUI
             }
         }
 
-        private void UnhookHorizontalScrollBarEvents()
-        {
-            if (_hScrollBar != null)
-            {
-                _hScrollBar.Scroll -= new ScrollEventHandler(HorizontalScrollBar_Scroll);
-                _hScrollBar.PointerEntered -= new PointerEventHandler(HorizontalScrollBar_PointerEntered);
-                _hScrollBar.PointerExited -= new PointerEventHandler(HorizontalScrollBar_PointerExited);
-            }
-        }
-
-        private void UnhookVerticalScrollBarEvents()
-        {
-            if (_vScrollBar != null)
-            {
-                _vScrollBar.Scroll -= new ScrollEventHandler(VerticalScrollBar_Scroll);
-                _vScrollBar.PointerEntered -= new PointerEventHandler(VerticalScrollBar_PointerEntered);
-                _vScrollBar.PointerExited -= new PointerEventHandler(VerticalScrollBar_PointerExited);
-            }
-        }
-
         private void SetHorizontalOffset(double newHorizontalOffset)
         {
             if (_hScrollBar != null && _hScrollBar.Value != newHorizontalOffset)
@@ -608,9 +735,24 @@ namespace ZyunUI
             if (this.HorizontalOffset != newValue)
             {
                 this.HorizontalOffset = newValue;
+            }
+        }
 
-                //InvalidateColumnHeadersMeasure();
-                //InvalidateRowsMeasure(true);
+        private bool AreAllScrollBarsCollapsed
+        {
+            get
+            {
+                return (_hScrollBar == null || _hScrollBar.Visibility == Visibility.Collapsed) &&
+                       (_vScrollBar == null || _vScrollBar.Visibility == Visibility.Collapsed);
+            }
+        }
+
+        private bool AreBothScrollBarsVisible
+        {
+            get
+            {
+                return _hScrollBar != null && _hScrollBar.Visibility == Visibility.Visible &&
+                       _vScrollBar != null && _vScrollBar.Visibility == Visibility.Visible;
             }
         }
     }
