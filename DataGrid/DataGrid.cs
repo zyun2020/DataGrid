@@ -259,6 +259,17 @@ namespace ZyunUI
                 }
             }
 
+            if (_rowHeadersPresenter != null)
+            {
+                _rowHeadersPresenter.Children.Clear();
+            }
+
+            _rowHeadersPresenter = GetTemplateChild(DATAGRID_elementRowHeadersPresenterName) as DataGridRowHeadersPresenter;
+            if (_rowHeadersPresenter != null)
+            {
+                _rowHeadersPresenter.OwningGrid = this;
+            }
+
             if (_cellsPresenter != null)
             {
                 // If we're applying a new template, we want to remove the old rows first
@@ -690,6 +701,30 @@ namespace ZyunUI
             }
         }
 
+        private void AddElementForMeasure(FrameworkElement element)
+        {
+            if(_rootPanel != null)
+            {
+                _rootPanel.Children.Insert(0, element);
+            }
+            else if(_cellsPresenter != null)
+            {
+                _cellsPresenter.Children.Add(element);
+            }
+        }
+
+        private void RemoveElementForMeasure(FrameworkElement element)
+        {
+            if (_rootPanel != null)
+            {
+                _rootPanel.Children.Remove(element);
+            }
+            else if (_cellsPresenter != null)
+            {
+                _cellsPresenter.Children.Remove(element);
+            }
+        }
+
         protected override Size MeasureOverride(Size availableSize)
         {
             // Delay layout until after the initial measure to avoid invalid calculations when the
@@ -754,6 +789,8 @@ namespace ZyunUI
 
             UpdateDisplayedColumns();
             UpdateDisplayedRows(0, CellsViewHeight);
+
+            EnsureTopLeftCornerHeader();
         }
 
         internal void MeasureCells(double measureWidth)
@@ -942,7 +979,7 @@ namespace ZyunUI
             object dataItem;
             AdvancedCollectionView collectionView = CollectionView;
 
-            DataGridRowHeader rowHeader = new DataGridRowHeader();
+           
             double width = 0;
 
             Size desiredSize = new Size();
@@ -962,6 +999,12 @@ namespace ZyunUI
                 width = columnWidth.Value;
             }
 
+            DataGridRowHeader rowHeader = new DataGridRowHeader();
+            TextBlock textBlock = RowHeaderColumn.GenerateRowHeader(null);
+            rowHeader.Content = textBlock;
+           
+            AddElementForMeasure(rowHeader);
+
             for (int i = 0; i < rows.Count; i++)
             {
                 row = rows[i];
@@ -974,7 +1017,14 @@ namespace ZyunUI
                 if (isMeaseureCol || isMeaseureRow)
                 {
                     dataItem = collectionView[i];
-                    rowHeader.DataContext = dataItem;
+                    if (RowHeaderColumn.Binding == null)
+                    {
+                        textBlock.Text = CellRef.ToRowName(i + 1);
+                    }
+                    else
+                    {
+                        rowHeader.DataContext = dataItem;
+                    }
 
                     rowHeader.Measure(measureSize);
                     desiredSize = rowHeader.DesiredSize;
@@ -1004,6 +1054,7 @@ namespace ZyunUI
                 width = RowHeaderColumn.MinWidth;
 
             ActualRowHeaderWidth = width;
+            RemoveElementForMeasure(rowHeader);
         }
 
         private double MeasureCells(DataGridColumn column, Size measureSize, bool isMeaseureCol)
@@ -1014,8 +1065,8 @@ namespace ZyunUI
             AdvancedCollectionView collectionView = CollectionView;
 
             DataGridCell gridCell = column.CreateGridCell(null);
-            _cellsPresenter.Children.Add(gridCell);
-           
+            AddElementForMeasure(gridCell);
+            
             double width = 0;
 
             Size desiredSize = new Size();
@@ -1061,7 +1112,7 @@ namespace ZyunUI
             if (width < column.ActualWidth) width = column.ActualWidth;
             else if (width < column.ActualMinWidth) width = column.ActualMinWidth;
 
-            _cellsPresenter.Children.Remove(gridCell);
+            RemoveElementForMeasure(gridCell); 
 
             return width;
         }
@@ -1180,6 +1231,7 @@ namespace ZyunUI
             _scrollingByHeight = true;
             try
             {
+                bool updateFromBottom = false;
                 double deltaY = 0;
                 int newFirstScrollingRow = this.DisplayData.FirstDisplayedRow;
                 double newVerticalOffset = _verticalOffset + height;
@@ -1194,6 +1246,7 @@ namespace ZyunUI
                         // OnRowMeasure(Size).  For most data, this should be unnoticeable.
                         UpdateDisplayedRowsFromBottom(lastVisibleRow);
                         newFirstScrollingRow = this.DisplayData.FirstDisplayedRow;
+                        updateFromBottom = true;
                     }
                     else
                     {
@@ -1238,100 +1291,59 @@ namespace ZyunUI
                 else
                 {
                     // Scrolling Up
-                    if (DoubleUtil.GreaterThanOrClose(height + this.NegVerticalOffset, 0))
-                    {
-                        // We've merely exposing more of the row we're on
-                        this.NegVerticalOffset += height;
-                    }
-                    else
-                    {
-                        // Figure out what row we've scrolled up to and update the value for this.NegVerticalOffset
-                        deltaY = -this.NegVerticalOffset;
-                        this.NegVerticalOffset = 0;
-
-                        int lastScrollingSlot = this.DisplayData.LastDisplayedRow;
-                        while (DoubleUtil.GreaterThan(deltaY, height))
-                        {
-                            if (newFirstScrollingRow > 0)
-                            {
-                                newFirstScrollingRow--;
-                            }
-                            else
-                            {
-                                this.NegVerticalOffset = 0;
-                                break;
-                            }
-
-                            double rowHeight = GetRowActualHeight(newFirstScrollingRow);
-                            double remainingHeight = height - deltaY;
-                            if (DoubleUtil.LessThanOrClose(rowHeight + remainingHeight, 0))
-                            {
-                                deltaY -= rowHeight;
-                            }
-                            else
-                            {
-                                this.NegVerticalOffset = rowHeight + remainingHeight;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (DoubleUtil.GreaterThanOrClose(0, newVerticalOffset) && newFirstScrollingRow != 0)
+                    if (DoubleUtil.GreaterThanOrClose(0, newVerticalOffset))
                     {
                         // We've scrolled to the top of the ScrollBar, automatically place the user at the very top
                         // of the DataGrid.  If this produces very odd behavior, evaluate the RowHeight estimate.
                         // strategy. For most data, this should be unnoticeable.
                         this.NegVerticalOffset = 0;
-                        UpdateDisplayedRows(0, this.CellsViewHeight);
                         newFirstScrollingRow = 0;
                     }
-                }
-
-                double firstRowHeight = GetRowActualHeight(newFirstScrollingRow);
-                if (DoubleUtil.LessThan(firstRowHeight, this.NegVerticalOffset))
-                {
-                    // We've scrolled off more of the first row than what's possible.  This can happen
-                    // if the first row got shorter (Ex: Collapsing RowDetails) or if the user has a recycling
-                    // cleanup issue.  In this case, simply try to display the next row as the first row instead
-                    if (newFirstScrollingRow < this.RowCount - 1)
+                    else
                     {
-                        newFirstScrollingRow++;
-                        DiagnosticsDebug.Assert(newFirstScrollingRow != -1, "Expected newFirstScrollingSlot other than -1.");
-                    }
-
-                    this.NegVerticalOffset = 0;
-                }
-
-                UpdateDisplayedRows(newFirstScrollingRow, this.CellsViewHeight);
-
-                double firstElementHeight = GetRowActualHeight(this.DisplayData.FirstDisplayedRow);
-                if (DoubleUtil.GreaterThan(this.NegVerticalOffset, firstElementHeight))
-                {
-                    int firstElementSlot = this.DisplayData.FirstDisplayedRow;
-
-                    // We filled in some rows at the top and now we have a NegVerticalOffset that's greater than the first element
-                    while (newFirstScrollingRow > 0 && DoubleUtil.GreaterThan(this.NegVerticalOffset, firstElementHeight))
-                    {
-                        int previousSlot = firstElementSlot - 1;
-                        if (previousSlot == -1)
+                        if (DoubleUtil.GreaterThanOrClose(height + this.NegVerticalOffset, 0))
                         {
-                            this.NegVerticalOffset = 0;
-                            VerticalOffset = 0;
+                            // We've merely exposing more of the row we're on
+                            this.NegVerticalOffset += height;
                         }
                         else
                         {
-                            this.NegVerticalOffset -= firstElementHeight;
-                            VerticalOffset = Math.Max(0, _verticalOffset - firstElementHeight);
-                            firstElementSlot = previousSlot;
-                            firstElementHeight = GetRowActualHeight(firstElementSlot);
+                            // Figure out what row we've scrolled up to and update the value for this.NegVerticalOffset
+                            deltaY = -this.NegVerticalOffset;
+                            this.NegVerticalOffset = 0;
+
+                            int lastScrollingSlot = this.DisplayData.LastDisplayedRow;
+                            while (DoubleUtil.GreaterThan(deltaY, height))
+                            {
+                                if (newFirstScrollingRow > 0)
+                                {
+                                    newFirstScrollingRow--;
+                                }
+                                else
+                                {
+                                    this.NegVerticalOffset = 0;
+                                    break;
+                                }
+
+                                double rowHeight = GetRowActualHeight(newFirstScrollingRow);
+                                double remainingHeight = height - deltaY;
+                                if (DoubleUtil.LessThanOrClose(rowHeight + remainingHeight, 0))
+                                {
+                                    deltaY -= rowHeight;
+                                }
+                                else
+                                {
+                                    this.NegVerticalOffset = rowHeight + remainingHeight;
+                                    break;
+                                }
+                            }
                         }
                     }
+                }
 
-                    // We could be smarter about this, but it's not common so we wouldn't gain much from optimizing here
-                    if (firstElementSlot != this.DisplayData.FirstDisplayedRow)
-                    {
-                        UpdateDisplayedRows(firstElementSlot, this.CellsViewHeight);
-                    }
+                if (!updateFromBottom)
+                {
+                    UpdateDisplayedRows(newFirstScrollingRow, this.CellsViewHeight);
                 }
 
                 DiagnosticsDebug.Assert(this.DisplayData.FirstDisplayedRow >= 0, "Expected positive DisplayData.FirstScrollingSlot.");
@@ -1339,25 +1351,20 @@ namespace ZyunUI
 
                 if (this.DisplayData.FirstDisplayedRow == 0)
                 {
-                    VerticalOffset = this.NegVerticalOffset;
+                    newVerticalOffset = this.NegVerticalOffset;
                 }
                 else if (DoubleUtil.GreaterThan(this.NegVerticalOffset, newVerticalOffset))
                 {
                     // The scrolled-in row was larger than anticipated. Adjust the DataGrid so the ScrollBar thumb
                     // can stay in the same place
-                    this.NegVerticalOffset = newVerticalOffset;
-                    VerticalOffset = newVerticalOffset;
+                    this.NegVerticalOffset = newVerticalOffset; 
                 }
-                else
-                {
-                    VerticalOffset = newVerticalOffset;
-                }
-
+               
                 DiagnosticsDebug.Assert(
                     _verticalOffset != 0 || this.NegVerticalOffset != 0 || this.DisplayData.FirstDisplayedRow <= 0,
                     "Expected _verticalOffset other than 0 or this.NegVerticalOffset other than 0 or this.DisplayData.FirstScrollingSlot smaller than or equal to 0.");
 
-                SetVerticalOffset(_verticalOffset);
+                SetVerticalOffset(newVerticalOffset);
 
                 DiagnosticsDebug.Assert(DoubleUtil.GreaterThanOrClose(this.NegVerticalOffset, 0), "Expected NegVerticalOffset greater than or close to 0.");
                 DiagnosticsDebug.Assert(DoubleUtil.GreaterThanOrClose(_verticalOffset, this.NegVerticalOffset), "Expected _verticalOffset greater than or close to NegVerticalOffset.");

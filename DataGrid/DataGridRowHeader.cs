@@ -214,7 +214,13 @@ namespace ZyunUI
             set;
              
         }
-     
+
+        internal DataGrid OwningGrid
+        {
+            get;
+            set;
+        }
+
         /// <summary>
         /// Builds the visual tree for the row header when a new template is applied.
         /// </summary>
@@ -249,7 +255,21 @@ namespace ZyunUI
         /// <param name="previousStyle">Caller's previous associated Style</param>
         internal void EnsureStyle(Style previousStyle)
         {
-           
+            if (this.Style != null &&
+                this.OwningGrid != null &&
+                this.Style != this.OwningGrid.RowHeaderStyle &&
+                this.Style != previousStyle)
+            {
+                return;
+            }
+
+            Style style = null;
+            if (style == null && this.OwningGrid != null)
+            {
+                style = this.OwningGrid.RowHeaderStyle;
+            }
+
+            this.SetStyleWithType(style);
         }
 
         private void DataGridRowHeader_Tapped(object sender, TappedRoutedEventArgs e)

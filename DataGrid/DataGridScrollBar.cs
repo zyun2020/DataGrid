@@ -555,7 +555,6 @@ namespace ZyunUI
             HideScrollBars(true /*useTransitions*/);
         }
        
-       
         private void ShowScrollBars()
         {
             if (this.AreAllScrollBarsCollapsed)
@@ -736,6 +735,9 @@ namespace ZyunUI
             {
                 this.HorizontalOffset = newValue;
             }
+
+            InvalidateColumnHeadersArrange();
+            InvalidateCellsArrange();
         }
 
         private bool AreAllScrollBarsCollapsed

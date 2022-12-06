@@ -260,6 +260,7 @@ namespace ZyunUI
             if (row == null)
             {
                 row = new DataGridRowVisuals();
+                row.DisplayHeight = Rows[rowIndex].ActualHeight;
 
                 FrameworkElement element;
                 var columns = Columns;
@@ -273,11 +274,10 @@ namespace ZyunUI
                     element.SetStyleWithType(dataGridColumn.CellStyle);
                     dataGridCell.Content = element;
                     dataGridCell.Width = dataGridColumn.ActualWidth;
+                    dataGridCell.Height = row.DisplayHeight;
                     row.Insert(i, dataGridCell);
                 }
-                
             }
-            
             row.DisplayHeight = Rows[rowIndex].ActualHeight;
 
             if (AreRowHeadersVisible)
@@ -286,13 +286,18 @@ namespace ZyunUI
                 if (headerCell == null)
                 {
                     headerCell = row.CreateHeaderCell(RowHeaderColumn.CellStyle);
+                    
+                    TextBlock textBlock = RowHeaderColumn.GenerateRowHeader(dataItem);
+                    headerCell.Content = textBlock;
                 }
-                TextBlock textBlock = RowHeaderColumn.GenerateRowHeader(dataItem);
+                
                 if (RowHeaderColumn.Binding == null)
                 {
-                    textBlock.Text = CellRef.ToRowName(rowIndex);
+                    TextBlock textBlock = headerCell.Content as TextBlock;
+                    if(textBlock != null) textBlock.Text = CellRef.ToRowName(rowIndex);
                 }
-                headerCell.Height = Rows[rowIndex].ActualHeight;
+                headerCell.Height = row.DisplayHeight;
+                headerCell.Width = this.ActualRowHeaderWidth;
             }
             row.UpdateDataContext(dataItem);
 
@@ -325,13 +330,27 @@ namespace ZyunUI
                 _rowHeadersPresenter.Children.RemoveAt(displayRow);
             }
 
-            int cellIndex = displayRow * rowVisuals.CellCount;
             if (_cellsPresenter != null)
             {
-                for (int i = 0; i < rowVisuals.CellCount; i++)
+                if (displayRow == 0)
                 {
-                    DiagnosticsDebug.Assert(_cellsPresenter.Children[cellIndex] == rowVisuals[i], "RemoveDisplayedElement cells.");
-                    _cellsPresenter.Children.RemoveAt(cellIndex);
+                    for (int i = 0; i < rowVisuals.CellCount; i++)
+                    {
+                        DiagnosticsDebug.Assert(_cellsPresenter.Children[0] == rowVisuals[i], "RemoveDisplayedElement cells.");
+                        _cellsPresenter.Children.RemoveAt(0);
+                    }
+                }
+                else
+                {
+                    int cellCount = rowVisuals.CellCount;
+                    int cellIndex = _cellsPresenter.Children.Count - 1;
+                    for (int i = 0; i < cellCount; i++)
+                    {
+                        DiagnosticsDebug.Assert(_cellsPresenter.Children[cellIndex] == rowVisuals[cellCount - 1 - i], "RemoveDisplayedElement cells not equal.");
+                        DiagnosticsDebug.Assert(cellIndex == _cellsPresenter.Children.Count - 1, "cellIndex must equls _cellsPresenter.Children.Count - 1.");
+                        _cellsPresenter.Children.RemoveAt(cellIndex);
+                        cellIndex--;
+                    }
                 }
             }
         }

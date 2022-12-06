@@ -1,11 +1,13 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using Windows.Foundation;
 using ZyunUI.DataGridInternals;
+using ZyunUI.Utilities;
 
 namespace ZyunUI
 {
@@ -31,6 +33,13 @@ namespace ZyunUI
         {
             OwningGrid.OnPendingVerticalScroll();
 
+            if (Double.IsFinite(availableSize.Width) && Double.IsFinite(availableSize.Height))
+            {
+                RectangleGeometry rg = new RectangleGeometry();
+                rg.Rect = new Rect(0, 0, availableSize.Width, availableSize.Height);
+                this.Clip = rg;
+            }
+
             return base.MeasureOverride(availableSize);
         }
 
@@ -41,6 +50,10 @@ namespace ZyunUI
             rcChild.X = 0;
             rcChild.Y = 0;
 
+            double frozenLeftEdge;
+            double scrollingLeftEdge;
+            double cellLeftEdge;
+
             DataGridDisplayData displayData = this.OwningGrid.DisplayData;
             DataGridRowVisuals rowVisuals;
             DataGridCell gridCell;
@@ -48,23 +61,81 @@ namespace ZyunUI
             {
                 rowVisuals = displayData.GetDisplayedRow(i);
 
+                frozenLeftEdge = 0;
+                scrollingLeftEdge = -this.OwningGrid.HorizontalOffset;
+
                 rcChild.Height = rowVisuals.DisplayHeight;
-                rcChild.X = 0;
-
-                for (int k = 0; k < rowVisuals.CellCount; k++)
+                foreach (DataGridColumn column in columns)
                 {
-                    gridCell = rowVisuals[k];
+                    gridCell = rowVisuals[column.Index];
+                    bool shouldDisplayCell = ShouldDisplayCell(column, frozenLeftEdge, scrollingLeftEdge);
+                    EnsureCellDisplay(gridCell, shouldDisplayCell);
 
-                    rcChild.Width = gridCell.Width;
-                    gridCell.Arrange(rcChild);
-
-                    rcChild.X += rcChild.Width;
+                    if (column.IsFrozen)
+                    {
+                        cellLeftEdge = frozenLeftEdge;
+                        // This can happen before or after clipping because frozen cells aren't clipped
+                        frozenLeftEdge += column.ActualWidth;
+                    }
+                    else
+                    {
+                        cellLeftEdge = scrollingLeftEdge;
+                        scrollingLeftEdge += column.ActualWidth;
+                    }
+                    
+                    if (gridCell.Visibility == Visibility.Visible)
+                    {
+                        rcChild.X = cellLeftEdge;
+                        rcChild.Width = gridCell.Width;
+                        gridCell.Arrange(rcChild);
+                        if (!column.IsFrozen)
+                        {
+                            EnsureCellClip(gridCell, column.ActualWidth, rcChild.Height, frozenLeftEdge, scrollingLeftEdge);
+                        }
+                    }
                 }
 
                 rcChild.Y += rcChild.Height;
             }
 
             return base.ArrangeOverride(finalSize);
+        }
+
+        private static void EnsureCellClip(DataGridCell cell, double width, double height, double frozenLeftEdge, double cellLeftEdge)
+        {
+            // Clip the cell only if it's scrolled under frozen columns.  Unfortunately, we need to clip in this case
+            // because cells could be transparent
+            if (frozenLeftEdge > cellLeftEdge)
+            {
+                RectangleGeometry rg = new RectangleGeometry();
+                double xClip = Math.Round(Math.Min(width, frozenLeftEdge - cellLeftEdge));
+                rg.Rect = new Rect(xClip, 0, Math.Max(0, width - xClip), height);
+                cell.Clip = rg;
+            }
+            else
+            {
+                cell.Clip = null;
+            }
+        }
+
+        private static void EnsureCellDisplay(DataGridCell cell, bool displayColumn)
+        {
+           cell.Visibility = displayColumn ? Visibility.Visible : Visibility.Collapsed; 
+        }
+
+        private bool ShouldDisplayCell(DataGridColumn column, double frozenLeftEdge, double scrollingLeftEdge)
+        {
+            if (column.Visibility != Visibility.Visible)
+            {
+                return false;
+            }
+
+            scrollingLeftEdge += this.OwningGrid.HorizontalAdjustment;
+            double leftEdge = column.IsFrozen ? frozenLeftEdge : scrollingLeftEdge;
+            double rightEdge = leftEdge + column.ActualWidth;
+            return DoubleUtil.GreaterThan(rightEdge, 0) &&
+                DoubleUtil.LessThanOrClose(leftEdge, this.OwningGrid.CellsViewWidth) &&
+                DoubleUtil.GreaterThan(rightEdge, frozenLeftEdge); // scrolling column covered up by frozen column(s)
         }
 
         private void DataGridRowsPresenter_ManipulationStarting(object sender, ManipulationStartingRoutedEventArgs e)

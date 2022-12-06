@@ -68,7 +68,8 @@
     <x:String x:Key="SortIconDescending">&#xE74B;</x:String>
     <x:String x:Key="RowGroupHeaderIconClosed">&#xE0E3;</x:String>
     <x:String x:Key="RowGroupHeaderIconOpened">&#xE0E5;</x:String>
-
+    <x:String x:Key="TopLeftHeaderIcon">&#xF169;</x:String>
+ 
     <x:String x:Key="ScrollBarsSeparatorExpandBeginTime">00:00:00.40</x:String>
     <x:String x:Key="ScrollBarsSeparatorExpandDuration">00:00:00.1</x:String>
     <x:String x:Key="ScrollBarsSeparatorContractBeginTime">00:00:02.00</x:String>
@@ -303,13 +304,14 @@
                                 <!--Start: TopLeftHeaderTemplate-->
                                 <ControlTemplate x:Key="TopLeftHeaderTemplate" TargetType="local:DataGridColumnHeader">
                                     <Grid x:Name="TopLeftHeaderRoot">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*"/>
-                                            <RowDefinition Height="*"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Border BorderThickness="0,0,1,0" BorderBrush="{ThemeResource GridLinesBrush}" Grid.RowSpan="2"/>
-                                        <Rectangle VerticalAlignment="Bottom" Width="Auto" StrokeThickness="1" Height="1" Fill="{ThemeResource GridLinesBrush}" Grid.RowSpan="2"/>
+                                        <Border BorderThickness="0,0,1,0" BorderBrush="{ThemeResource GridLinesBrush}"/>
+                                        <FontIcon Glyph="{ThemeResource TopLeftHeaderIcon}" 
+                                                  FontSize="16"
+                                                  Foreground="{ThemeResource DataGridColumnHeaderForegroundBrush}"
+                                                  Margin="4"
+                                                  HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+
+                                        <!--<Rectangle VerticalAlignment="Bottom" Width="Auto" StrokeThickness="1" Height="1" Fill="{ThemeResource GridLinesBrush}" Grid.RowSpan="2"/>-->
                                     </Grid>
                                 </ControlTemplate>
                                 <!--End: TopLeftHeaderTemplate-->
@@ -345,7 +347,9 @@
                             <!--<localprimitives:DataGridColumnHeader x:Name="TopRightCornerHeader" Grid.Column="2" Template="{StaticResource TopRightHeaderTemplate}"/>-->
                             <Rectangle x:Name="ColumnHeadersAndRowsSeparator" Grid.ColumnSpan="3" VerticalAlignment="Bottom" Width="Auto" StrokeThickness="1" Height="1" Fill="{ThemeResource GridLinesBrush}"/>
 
-                            <local:DataGridCellsPresenter x:Name="CellsPresenter" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2"
+                            <local:DataGridCellsPresenter x:Name="CellsPresenter"
+                                                          Background="{TemplateBinding Background}"
+                                                          Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2"
                                 AutomationProperties.AccessibilityView="Raw"/>
                             <Rectangle x:Name="BottomRightCorner" Fill="{ThemeResource ScrollBarsSeparatorBackground}" Opacity="0" Grid.Row="2" Grid.Column="2"/>
                             <!-- Use BottomLeftCorner when RowsPresenter's Grid.RowSpan is 1 and the horizontal ScrollBar does not paint on top of the cells -->

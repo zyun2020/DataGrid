@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
+using ZyunUI.DataGridInternals;
 
 namespace ZyunUI
 {
@@ -36,11 +37,33 @@ namespace ZyunUI
                 return new Size(0.0, 0.0);
             }
 
-            return new Size(this.OwningGrid.ColumnsInternal.VisibleEdgedColumnsWidth, this.OwningGrid.ActualColumnHeaderHeight);
+            Size  size = new Size(this.OwningGrid.ActualRowHeaderWidth, OwningGrid.CellsViewHeight);
+            RectangleGeometry rg = new RectangleGeometry();
+            rg.Rect = new Rect(0, 0, size.Width, size.Height);
+            this.Clip = rg;
+
+            return size;
         }
 
         protected override Size ArrangeOverride(Size finalSize)
         {
+            if (OwningGrid.AreRowHeadersVisible)
+            {
+                DataGridDisplayData displayData = this.OwningGrid.DisplayData;
+                DataGridRowVisuals rowVisuals;
+                DataGridRowHeader rowHeader;
+
+                Rect child = new Rect(0, 0, finalSize.Width, 0);
+                for (int i = 0; i < displayData.NumDisplayedRows; i++)
+                {
+                    rowVisuals = displayData.GetDisplayedRow(i);
+                    rowHeader = rowVisuals.HeaderCell;
+
+                    child.Height = rowVisuals.DisplayHeight;
+                    rowHeader.Arrange(child);
+                    child.Y += child.Height;
+                }
+            }
             return finalSize;
         }
     }
