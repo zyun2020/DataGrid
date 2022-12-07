@@ -457,10 +457,10 @@ namespace ZyunUI
             return null;
         }
 
-        internal DataGridColumn GetPreviousVisibleNonFillerColumn(DataGridColumn dataGridColumnStart)
+        internal DataGridColumn GetPreviousVisibleColumn(DataGridColumn dataGridColumnStart)
         {
             DataGridColumn column = GetPreviousColumn(dataGridColumnStart, true /*isVisible*/, null /*isFrozen*/, null /*isReadOnly*/);
-            return (column is DataGridFillerColumn) ? null : column;
+            return  column;
         }
 
         internal DataGridColumn GetPreviousVisibleScrollingColumn(DataGridColumn dataGridColumnStart)
@@ -539,7 +539,7 @@ namespace ZyunUI
                 Debug.Assert(columnIndex >= 0 && columnIndex < this.ItemsInternal.Count, "Unexpected columnIndex value.");
 
                 DataGridColumn dataGridColumn = this.ItemsInternal[columnIndex];
-                DataGridCellCoordinates newCurrentCellCoordinates = _owningGrid.OnRemovingColumn(dataGridColumn);
+                //DataGridCellCoordinates newCurrentCellCoordinates = _owningGrid.OnRemovingColumn(dataGridColumn);
                 this.ItemsInternal.RemoveAt(columnIndex);
                 if (dataGridColumn.IsVisible)
                 {
@@ -555,7 +555,7 @@ namespace ZyunUI
                  
                 base.RemoveItem(columnIndex); 
 
-                _owningGrid.OnRemovedColumn_PostNotification(newCurrentCellCoordinates);
+                //_owningGrid.OnRemovedColumn_PostNotification(newCurrentCellCoordinates);
                 _owningGrid.OnColumnCollectionChanged_PostNotification(false /*columnsGrew*/);
 
             }

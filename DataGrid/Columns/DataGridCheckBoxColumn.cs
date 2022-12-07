@@ -116,7 +116,7 @@ namespace ZyunUI
             if (EnsureOwningGrid())
             {
                 if (cell.RowIndex != -1 && cell.ColumnIndex != -1 &&
-                    cell.ColumnIndex == this.OwningGrid.CurrentColumnIndex)
+                    cell.ColumnIndex == this.OwningGrid.CurrentColumn)
                 {
                     isEnabled = true;
                     if (_currentCheckBox != null)
@@ -292,34 +292,34 @@ namespace ZyunUI
                 _currentCheckBox.IsEnabled = false;
             }
 
-            if (this.OwningGrid != null && this.OwningGrid.CurrentColumn == this)
-            {
-                CheckBox checkBox = this.GetCellContent(OwningGrid.CurrentColumnIndex) as CheckBox;
-                if (checkBox != null)
-                {
-                    checkBox.IsEnabled = true;
-                }
+            //if (this.OwningGrid != null && this.OwningGrid.CurrentColumn == this)
+            //{
+            //    CheckBox checkBox = this.GetCellContent(OwningGrid.CurrentColumnIndex) as CheckBox;
+            //    if (checkBox != null)
+            //    {
+            //        checkBox.IsEnabled = true;
+            //    }
 
-                _currentCheckBox = checkBox;
-            }
+            //    _currentCheckBox = checkBox;
+            //}
         }
 
         private void OwningGrid_KeyDown(object sender, KeyRoutedEventArgs e)
         {
-            if (e.Key == Windows.System.VirtualKey.Space &&
-                this.OwningGrid != null &&
-                this.OwningGrid.CurrentColumn == this)
-            {
-                CheckBox checkBox = this.GetCellContent(OwningGrid.CurrentColumnIndex) as CheckBox;
-                if (checkBox == _currentCheckBox)
-                {
-                    _beganEditWithKeyboard = true;
-                    this.OwningGrid.BeginEdit();
-                    return;
-                }
-            }
+            //if (e.Key == Windows.System.VirtualKey.Space &&
+            //    this.OwningGrid != null &&
+            //    this.OwningGrid.CurrentColumn == this)
+            //{
+            //    CheckBox checkBox = this.GetCellContent(OwningGrid.CurrentColumnIndex) as CheckBox;
+            //    if (checkBox == _currentCheckBox)
+            //    {
+            //        _beganEditWithKeyboard = true;
+            //        this.OwningGrid.BeginEdit();
+            //        return;
+            //    }
+            //}
 
-            _beganEditWithKeyboard = false;
+            //_beganEditWithKeyboard = false;
         }
     }
 }

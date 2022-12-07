@@ -175,7 +175,7 @@ namespace ZyunUI
         internal void OnColumnCollectionChanged_PostNotification(bool columnsGrew)
         {
             if (columnsGrew &&
-                this.CurrentColumnIndex == -1)
+                this.CurrentColumn == -1)
             { ;
             }
 
@@ -366,7 +366,7 @@ namespace ZyunUI
         internal void OnColumnReadOnlyStateChanging(DataGridColumn dataGridColumn, bool isReadOnly)
         {
             DiagnosticsDebug.Assert(dataGridColumn != null, "Expected non-null dataGridColumn.");
-            if (isReadOnly && this.CurrentColumnIndex == dataGridColumn.Index)
+            if (isReadOnly && this.CurrentColumn== dataGridColumn.Index)
             {
                 // Edited column becomes read-only. Exit editing mode.
                 if (!EndCellEdit(DataGridEditAction.Commit, true /*exitEditingMode*/, this.ContainsFocus /*keepFocus*/, true /*raiseEvents*/))
@@ -387,13 +387,13 @@ namespace ZyunUI
         {
             DiagnosticsDebug.Assert(targetColumn != null, "Expected non-null targetColumn.");
 
-            if (targetColumn.IsVisible && this.CurrentColumn == targetColumn)
+            if (targetColumn.IsVisible)
             {
                 // Column of the current cell is made invisible. Trying to move the current cell to a neighbor column. May throw an exception.
                 DataGridColumn dataGridColumn = this.ColumnsInternal.GetNextVisibleColumn(targetColumn);
                 if (dataGridColumn == null)
                 {
-                    dataGridColumn = this.ColumnsInternal.GetPreviousVisibleNonFillerColumn(targetColumn);
+                    dataGridColumn = this.ColumnsInternal.GetPreviousVisibleColumn(targetColumn);
                 }
 
                 if (dataGridColumn == null)
@@ -416,14 +416,7 @@ namespace ZyunUI
             }
         }
 
-        internal void OnInsertedColumn_PostNotification(DataGridCellCoordinates newCurrentCellCoordinates, int newDisplayIndex)
-        {
-            // Update current cell if needed
-            if (newCurrentCellCoordinates.ColumnIndex != -1)
-            {
-                 
-            }
-        }
+     
 
         internal void OnInsertedColumn_PreNotification(DataGridColumn insertedColumn)
         {
@@ -464,42 +457,7 @@ namespace ZyunUI
             }
         }
 
-        internal DataGridCellCoordinates OnInsertingColumn(int columnIndexInserted, DataGridColumn insertColumn)
-        {
-            DataGridCellCoordinates newCurrentCellCoordinates = new DataGridCellCoordinates(-1, -1);
-            DiagnosticsDebug.Assert(insertColumn != null, "Expected non-null insertColumn.");
-
-            if (insertColumn.OwningGrid != null)
-            {
-                throw DataGridError.DataGrid.ColumnCannotBeReassignedToDifferentDataGrid();
-            }
-
-            // Reset current cell if there is one, no matter the relative position of the columns involved
-            if (this.CurrentColumnIndex != -1)
-            {
-                //_temporarilyResetCurrentCell = true;
-                //newCurrentCellCoordinates = new DataGridCellCoordinates(
-                //    columnIndexInserted <= this.CurrentColumnIndex ? this.CurrentColumnIndex + 1 : this.CurrentColumnIndex,
-                //    this.CurrentSlot);
-                //ResetCurrentCellCore();
-            }
-            else
-            {
-                newCurrentCellCoordinates = new DataGridCellCoordinates(-1, -1);
-            }
-
-            return newCurrentCellCoordinates;
-        }
-
-        internal void OnRemovedColumn_PostNotification(DataGridCellCoordinates newCurrentCellCoordinates)
-        {
-            // Update current cell if needed
-            if (newCurrentCellCoordinates.ColumnIndex != -1)
-            {
-                DiagnosticsDebug.Assert(this.CurrentColumnIndex == -1, "Expected CurrentColumnIndex equals -1.");
-                //SetAndSelectCurrentCell(newCurrentCellCoordinates.ColumnIndex, newCurrentCellCoordinates.Slot, false /*forceCurrentCellSelection*/);
-            }
-        }
+       
 
         internal void OnRemovedColumn_PreNotification(DataGridColumn removedColumn)
         {
@@ -539,118 +497,7 @@ namespace ZyunUI
             //RemoveDisplayedColumnHeader(removedColumn);
         }
 
-        internal DataGridCellCoordinates OnRemovingColumn(DataGridColumn dataGridColumn)
-        {
-            DiagnosticsDebug.Assert(dataGridColumn != null, "Expected non-null dataGridColumn.");
-            DiagnosticsDebug.Assert(dataGridColumn.Index >= 0, "Expected positive dataGridColumn.Index.");
-            DiagnosticsDebug.Assert(dataGridColumn.Index < this.ColumnsItemsInternal.Count, "Expected dataGridColumn.Index smaller than ColumnsItemsInternal.Count.");
-
-            DataGridCellCoordinates newCurrentCellCoordinates;
-
-            //_temporarilyResetCurrentCell = false;
-            int columnIndex = dataGridColumn.Index;
-
-            // Reset the current cell's address if there is one.
-            if (this.CurrentColumnIndex != -1)
-            {
-                int newCurrentColumnIndex = this.CurrentColumnIndex;
-                if (columnIndex == newCurrentColumnIndex)
-                {
-                    DataGridColumn dataGridColumnNext = this.ColumnsInternal.GetNextVisibleColumn(this.ColumnsItemsInternal[columnIndex]);
-                    if (dataGridColumnNext != null)
-                    {
-                        if (dataGridColumnNext.Index > columnIndex)
-                        {
-                            newCurrentColumnIndex = dataGridColumnNext.Index - 1;
-                        }
-                        else
-                        {
-                            newCurrentColumnIndex = dataGridColumnNext.Index;
-                        }
-                    }
-                    else
-                    {
-                        DataGridColumn dataGridColumnPrevious = this.ColumnsInternal.GetPreviousVisibleNonFillerColumn(this.ColumnsItemsInternal[columnIndex]);
-                        if (dataGridColumnPrevious != null)
-                        {
-                            if (dataGridColumnPrevious.Index > columnIndex)
-                            {
-                                newCurrentColumnIndex = dataGridColumnPrevious.Index - 1;
-                            }
-                            else
-                            {
-                                newCurrentColumnIndex = dataGridColumnPrevious.Index;
-                            }
-                        }
-                        else
-                        {
-                            newCurrentColumnIndex = -1;
-                        }
-                    }
-                }
-                else if (columnIndex < newCurrentColumnIndex)
-                {
-                    newCurrentColumnIndex--;
-                }
-
-                newCurrentCellCoordinates = new DataGridCellCoordinates(newCurrentColumnIndex, (newCurrentColumnIndex == -1) ? -1 : this.CurrentSlot);
-                if (columnIndex == this.CurrentColumnIndex)
-                {
-                    // If the commit fails, force a cancel edit
-                    if (!this.CommitEdit(false /*exitEditingMode*/))
-                    {
-                        this.CancelEdit(false /*raiseEvents*/);
-                    }
-                }
-                else
-                {
-                    // Underlying data of deleted column is gone. It cannot be accessed anymore.
-                    // Do not end editing mode so that CellValidation doesn't get raised, since that event needs the current formatted value.
-                    //_temporarilyResetCurrentCell = true;
-                }
-
-                //bool success = this.SetCurrentCellCore(-1, -1);
-                //DiagnosticsDebug.Assert(success, "Expected successful call to SetCurrentCellCore.");
-            }
-            else
-            {
-                newCurrentCellCoordinates = new DataGridCellCoordinates(-1, -1);
-            }
-
-            // If the last column is removed, delete all the rows first.
-            if (this.ColumnsItemsInternal.Count == 1)
-            {
-                ClearRows(false);
-            }
-
-            // Is deleted column scrolled off screen?
-            if (dataGridColumn.IsVisible &&
-                !dataGridColumn.IsFrozen &&
-                this.DisplayData.FirstDisplayedCol >= 0)
-            {
-                // Deleted column is part of scrolling columns.
-                if (this.DisplayData.FirstDisplayedCol == dataGridColumn.Index)
-                {
-                    // Deleted column is first scrolling column
-                    _horizontalOffset -= _negHorizontalOffset;
-                    _negHorizontalOffset = 0;
-                }
-                else if (!this.ColumnsInternal.DisplayInOrder(this.DisplayData.FirstDisplayedCol, dataGridColumn.Index))
-                {
-                    // Deleted column is displayed before first scrolling column
-                    DiagnosticsDebug.Assert(_horizontalOffset >= GetEdgedColumnWidth(dataGridColumn), "Expected _horizontalOffset greater than or equal to GetEdgedColumnWidth(dataGridColumn).");
-                    _horizontalOffset -= GetEdgedColumnWidth(dataGridColumn);
-                }
-
-                if (_hScrollBar != null && _hScrollBar.Visibility == Visibility.Visible)
-                {
-                    _hScrollBar.Value = _horizontalOffset;
-                }
-            }
-
-            return newCurrentCellCoordinates;
-        }
-
+     
         /// <summary>
         /// Called when a column property changes, and its cells need to adjust that column change.
         /// </summary>
@@ -1269,7 +1116,7 @@ namespace ZyunUI
         {
             DiagnosticsDebug.Assert(dataGridColumn != null, "Expected non-null dataGridColumn.");
 
-            return this.IsReadOnly || dataGridColumn.IsReadOnly || dataGridColumn is DataGridFillerColumn;
+            return this.IsReadOnly || dataGridColumn.IsReadOnly;
         }
 
         /// <summary>

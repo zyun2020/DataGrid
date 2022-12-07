@@ -162,13 +162,6 @@ namespace ZyunUI
                 scrollingLeftEdge += dataGridColumn.ActualWidth;
             }
 
-            // This needs to be updated after the filler column is configured
-            DataGridColumn lastVisibleColumn = this.OwningGrid.ColumnsInternal.LastVisibleColumn;
-            if (lastVisibleColumn != null)
-            {
-                lastVisibleColumn.HeaderCell.UpdateSeparatorVisibility(lastVisibleColumn);
-            }
-
             return finalSize;
         }
 

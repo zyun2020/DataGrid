@@ -5,17 +5,17 @@ namespace ZyunUI
     /// <summary>
     /// Represents a range of cells.
     /// </summary>
-    public class CellRange
+    public class GridCellRange
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CellRange"/> class.
+        /// Initializes a new instance of the <see cref="GridCellRange"/> class.
         /// </summary>
         /// <param name="cell1">The cell1.</param>
         /// <param name="cell2">The cell2.</param>
-        public CellRange(CellRef cell1, CellRef cell2)
+        public GridCellRange(GridCellRef cell1, GridCellRef cell2)
         {
-            this.TopLeft = new CellRef(Math.Min(cell1.Row, cell2.Row), Math.Min(cell1.Column, cell2.Column));
-            this.BottomRight = new CellRef(Math.Max(cell1.Row, cell2.Row), Math.Max(cell1.Column, cell2.Column));
+            this.TopLeft = new GridCellRef(Math.Min(cell1.Row, cell2.Row), Math.Min(cell1.Column, cell2.Column));
+            this.BottomRight = new GridCellRef(Math.Max(cell1.Row, cell2.Row), Math.Max(cell1.Column, cell2.Column));
         }
 
         /// <summary>
@@ -24,7 +24,7 @@ namespace ZyunUI
         /// <value>
         /// The top left cell reference.
         /// </value>
-        public CellRef TopLeft { get; }
+        public GridCellRef TopLeft { get; }
 
         /// <summary>
         /// Gets the bottom right cell.
@@ -32,7 +32,7 @@ namespace ZyunUI
         /// <value>
         /// The bottom right cell reference.
         /// </value>
-        public CellRef BottomRight { get; }
+        public GridCellRef BottomRight { get; }
 
         /// <summary>
         /// Gets the index of the top row.

@@ -630,7 +630,7 @@ namespace ZyunUI
         {
             get
             {
-                if (this.OwningGrid == null || this.OwningGrid.CanUserResizeColumns == false || this is DataGridFillerColumn)
+                if (this.OwningGrid == null || this.OwningGrid.CanUserResizeColumns == false)
                 {
                     return false;
                 }

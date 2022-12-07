@@ -7,24 +7,24 @@ namespace ZyunUI
     /// <summary>
     /// Represents a cell reference.
     /// </summary>
-    public struct CellRef : IEquatable<CellRef>
+    public class GridCellRef : IEquatable<GridCellRef>
     {
         /// <summary>
         /// The column.
         /// </summary>
-        private readonly int column;
+        private readonly int column = -1;
 
         /// <summary>
         /// The row.
         /// </summary>
-        private readonly int row;
+        private readonly int row = -1;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CellRef" /> struct.
+        /// Initializes a new instance of the <see cref="GridCellRef" /> struct.
         /// </summary>
         /// <param name="row">The row.</param>
         /// <param name="column">The column.</param>
-        public CellRef(int row, int column)
+        public GridCellRef(int row, int column)
         {
             this.row = row;
             this.column = column;
@@ -93,7 +93,7 @@ namespace ZyunUI
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object obj)
         {
-            return obj is CellRef && this.Equals((CellRef)obj);
+            return obj is GridCellRef && this.Equals((GridCellRef)obj);
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace ZyunUI
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
         /// <returns>true if the current object is equal to the <paramref name="other" /> parameter; otherwise, false.</returns>
-        public bool Equals(CellRef other)
+        public bool Equals(GridCellRef other)
         {
             return this.column == other.column && this.row == other.row;
         }

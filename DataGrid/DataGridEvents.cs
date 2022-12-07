@@ -204,7 +204,7 @@ namespace ZyunUI
         {
             if (e.Key == VirtualKey.Tab && e.OriginalSource as Control == this)
             {
-                if (this.CurrentColumnIndex == -1)
+                if (this.CurrentColumn == -1)
                 {
                     if (this.ColumnHeaders != null && this.AreColumnHeadersVisible && !this.ColumnHeaderHasFocus)
                     {
@@ -307,7 +307,7 @@ namespace ZyunUI
 
         private void DataGrid_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
-            if (this.CurrentColumnIndex != -1 && this.CurrentSlot != -1)
+            if (this.CurrentColumn != -1 && this.CurrentRow != -1)
             {
                 e.Handled = true;
             }

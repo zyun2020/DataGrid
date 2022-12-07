@@ -489,7 +489,6 @@ namespace ZyunUI
         private bool CanReorderColumn(DataGridColumn column)
         {
             return this.OwningGrid.CanUserReorderColumns &&
-                !(column is DataGridFillerColumn) &&
                 ((column.CanUserReorderInternal.HasValue && column.CanUserReorderInternal.Value) || !column.CanUserReorderInternal.HasValue);
         }
 
@@ -634,11 +633,8 @@ namespace ZyunUI
                 double distanceFromLeft = pointerPosition.X;
                 double distanceFromRight = this.ActualWidth - distanceFromLeft;
                 DataGridColumn currentColumn = this.OwningColumn;
-                DataGridColumn previousColumn = null;
-                if (!(this.OwningColumn is DataGridFillerColumn))
-                {
-                    previousColumn = this.OwningGrid.ColumnsInternal.GetPreviousVisibleNonFillerColumn(currentColumn);
-                }
+                DataGridColumn previousColumn = this.OwningGrid.ColumnsInternal.GetPreviousVisibleColumn(currentColumn);
+
 
                 int resizeRegionWidth = e.Pointer.PointerDeviceType == PointerDeviceType.Touch ? DATAGRIDCOLUMNHEADER_resizeRegionWidthLoose : DATAGRIDCOLUMNHEADER_resizeRegionWidthStrict;
 
@@ -1072,12 +1068,8 @@ namespace ZyunUI
             double distanceFromTop = pointerPosition.Y;
             double distanceFromRight = this.ActualWidth - distanceFromLeft;
             DataGridColumn currentColumn = this.OwningColumn;
-            DataGridColumn previousColumn = null;
+            DataGridColumn previousColumn = this.OwningGrid.ColumnsInternal.GetPreviousVisibleColumn(currentColumn);
 
-            if (!(this.OwningColumn is DataGridFillerColumn))
-            {
-                previousColumn = this.OwningGrid.ColumnsInternal.GetPreviousVisibleNonFillerColumn(currentColumn);
-            }
 
             int resizeRegionWidth = pointer.PointerDeviceType == PointerDeviceType.Touch ? DATAGRIDCOLUMNHEADER_resizeRegionWidthLoose : DATAGRIDCOLUMNHEADER_resizeRegionWidthStrict;
             bool nearCurrentResizableColumnRightEdge = distanceFromRight <= resizeRegionWidth && currentColumn != null && CanResizeColumn(currentColumn) && distanceFromTop < this.ActualHeight;

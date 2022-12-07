@@ -270,6 +270,8 @@ namespace ZyunUI
                     dataGridColumn = columns[i];
 
                     DataGridCell dataGridCell = new DataGridCell();
+                    dataGridCell.OwningColumn = dataGridColumn;
+
                     element = dataGridColumn.GenerateElementInternal(dataGridCell, dataItem);
                     element.SetStyleWithType(dataGridColumn.CellStyle);
                     dataGridCell.Content = element;
@@ -294,7 +296,7 @@ namespace ZyunUI
                 if (RowHeaderColumn.Binding == null)
                 {
                     TextBlock textBlock = headerCell.Content as TextBlock;
-                    if(textBlock != null) textBlock.Text = CellRef.ToRowName(rowIndex);
+                    if(textBlock != null) textBlock.Text = GridCellRef.ToRowName(rowIndex);
                 }
                 headerCell.Height = row.DisplayHeight;
                 headerCell.Width = this.ActualRowHeaderWidth;

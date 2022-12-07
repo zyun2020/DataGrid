@@ -127,6 +127,7 @@ namespace ZyunUI
         private double _oldEdgedRowsHeightCalculated = 0.0;
         private bool _measured;
 
+        private bool _scrollingByHeight;
         private int _editingColumnIndex;
         private bool _columnHeaderHasFocus;
 
@@ -142,9 +143,9 @@ namespace ZyunUI
         private ContentControl _topLeftCornerHeader;
        
         private readonly List<DataGridRow> m_rows = new List<DataGridRow>();
-        private DataGridCellCoordinates _currentCellCoordinates;
         private Size? _datagridAvailableSize;
-        private bool _scrollingByHeight;
+     
+        private GridCellRef _currentCell = null;
 
         /// <summary>
         /// Occurs when the <see cref="ZyunUI.Controls.DataGridColumn.DisplayIndex"/>
@@ -687,7 +688,7 @@ namespace ZyunUI
         /// </returns>
         private String DefaultRowHeader(int j)
         { 
-            return CellRef.ToRowName(j);
+            return GridCellRef.ToRowName(j);
         }
 
         /// <summary>
@@ -1019,7 +1020,7 @@ namespace ZyunUI
                     dataItem = collectionView[i];
                     if (RowHeaderColumn.Binding == null)
                     {
-                        textBlock.Text = CellRef.ToRowName(i + 1);
+                        textBlock.Text = GridCellRef.ToRowName(i + 1);
                     }
                     else
                     {
@@ -1788,109 +1789,21 @@ namespace ZyunUI
             return false;
         }
 
-        private DataGridCellCoordinates CurrentCellCoordinates
+        internal GridCellRef CurrentCell
         {
             get
             {
-                return _currentCellCoordinates;
+                return _currentCell;
             }
 
             set
             {
-                _currentCellCoordinates = value;
+                _currentCell = value;
             }
         }
 
-        internal int CurrentColumnIndex
-        {
-            get
-            {
-                return this.CurrentCellCoordinates.ColumnIndex;
-            }
-
-            private set
-            {
-                this.CurrentCellCoordinates.ColumnIndex = value;
-            }
-        }
-
-        internal int CurrentSlot
-        {
-            get
-            {
-                return this.CurrentCellCoordinates.Slot;
-            }
-
-            private set
-            {
-                this.CurrentCellCoordinates.Slot = value;
-            }
-        }
-
-        public DataGridColumn CurrentColumn
-        {
-            get
-            {
-                if (this.CurrentColumnIndex == -1)
-                {
-                    return null;
-                }
-
-                DiagnosticsDebug.Assert(this.CurrentColumnIndex < this.ColumnsItemsInternal.Count, "Expected CurrentColumnIndex smaller than ColumnsItemsInternal.Count.");
-                return this.ColumnsItemsInternal[this.CurrentColumnIndex];
-            }
-
-            set
-            {
-                DataGridColumn dataGridColumn = value;
-                if (dataGridColumn == null)
-                {
-                    throw DataGridError.DataGrid.ValueCannotBeSetToNull("value", "CurrentColumn");
-                }
-
-                if (this.CurrentColumn != dataGridColumn)
-                {
-                    if (dataGridColumn.OwningGrid != this)
-                    {
-                        // Provided column does not belong to this DataGrid
-                        throw DataGridError.DataGrid.ColumnNotInThisDataGrid();
-                    }
-
-                    if (dataGridColumn.Visibility == Visibility.Collapsed)
-                    {
-                        // CurrentColumn cannot be set to an invisible column
-                        throw DataGridError.DataGrid.ColumnCannotBeCollapsed();
-                    }
-
-
-                    bool beginEdit = _editingColumnIndex != -1;
-                    if (!EndCellEdit(DataGridEditAction.Commit, true /*exitEditingMode*/, this.ContainsFocus /*keepFocus*/, true /*raiseEvents*/))
-                    {
-                        // Edited value couldn't be committed or aborted
-                        return;
-                    }
-
-                    if (_noFocusedColumnChangeCount == 0)
-                    {
-                        this.ColumnHeaderHasFocus = false;
-                    }
-
-                    //this.UpdateSelectionAndCurrency(dataGridColumn.Index, this.CurrentSlot, DataGridSelectionAction.None, false /*scrollIntoView*/);
-                   // DiagnosticsDebug.Assert(_successfullyUpdatedSelection, "Expected _successfullyUpdatedSelection is true.");
-                    if (beginEdit &&
-                        _editingColumnIndex == -1 &&
-                        this.CurrentSlot != -1 &&
-                        this.CurrentColumnIndex != -1 &&
-                        this.CurrentColumnIndex == dataGridColumn.Index &&
-                        dataGridColumn.OwningGrid == this &&
-                        !GetColumnEffectiveReadOnlyState(dataGridColumn))
-                    {
-                        // Returning to editing mode since the grid was in that mode prior to the EndCellEdit call above.
-                        BeginEdit(new RoutedEventArgs());
-                    }
-                }
-            }
-        }
+        internal int CurrentColumn => _currentCell == null ? -1 : _currentCell.Column;
+        internal int CurrentRow => _currentCell == null ? -1 : _currentCell.Row;
 
         private void ClearRows(bool recycle)
         {

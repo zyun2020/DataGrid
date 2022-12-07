@@ -10,23 +10,11 @@
         <ResourceDictionary x:Key="Default">
             <SolidColorBrush x:Key="InvalidBrush" Color="#FFFF00"/>
             <SolidColorBrush x:Key="FillerGridLinesBrush" Color="Transparent"/>
-            <StaticResource x:Key="ScrollBarsSeparatorBackground" ResourceKey="SystemControlPageBackgroundChromeLowBrush"/>
-            <StaticResource x:Key="DataGridColumnHeaderForegroundBrush" ResourceKey="SystemControlForegroundBaseMediumBrush"/>
-            <StaticResource x:Key="DataGridColumnHeaderBackgroundColor" ResourceKey="SystemAltHighColor"/>
-            <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundBrush" Color="{StaticResource DataGridColumnHeaderBackgroundColor}"/>
-            <StaticResource x:Key="DataGridColumnHeaderHoveredBackgroundColor" ResourceKey="SystemListLowColor"/>
-            <StaticResource x:Key="DataGridColumnHeaderPressedBackgroundColor" ResourceKey="SystemListMediumColor"/>
-            <StaticResource x:Key="DataGridColumnHeaderDraggedBackgroundBrush" ResourceKey="SystemControlBackgroundChromeMediumLowBrush"/>
-            <StaticResource x:Key="DataGridColumnHeaderPointerOverBrush" ResourceKey="SystemControlHighlightListLowBrush"/>
-            <StaticResource x:Key="DataGridColumnHeaderPressedBrush" ResourceKey="SystemControlHighlightListMediumBrush"/>
-            <StaticResource x:Key="DataGridRowGroupHeaderBackgroundBrush" ResourceKey="SystemControlBackgroundChromeMediumBrush"/>
-            <StaticResource x:Key="DataGridRowGroupHeaderPressedBackgroundBrush" ResourceKey="SystemControlBackgroundListMediumBrush"/>
-            <StaticResource x:Key="DataGridRowGroupHeaderForegroundBrush" ResourceKey="SystemControlForegroundBaseHighBrush"/>
-            <StaticResource x:Key="DataGridRowHoveredBackgroundColor" ResourceKey="SystemListLowColor"/>
-        </ResourceDictionary>
-        <ResourceDictionary x:Key="HighContrast">
-            <SolidColorBrush x:Key="InvalidBrush" Color="#FFFF00"/>
-            <SolidColorBrush x:Key="FillerGridLinesBrush" Color="Transparent"/>
+
+            <StaticResource x:Key="DataGridHeaderBackgroundBrush" ResourceKey="SolidBackgroundFillColorBase"/>
+            <StaticResource x:Key="DataGridCellCurrentBorderBrush" ResourceKey="SystemAccentColor"/>
+            <StaticResource x:Key="DataGridCellSelectedBackgroundBrush" ResourceKey="SolidBackgroundFillColorBase"/>
+
             <StaticResource x:Key="ScrollBarsSeparatorBackground" ResourceKey="SystemControlPageBackgroundChromeLowBrush"/>
             <StaticResource x:Key="DataGridColumnHeaderForegroundBrush" ResourceKey="SystemControlForegroundBaseMediumBrush"/>
             <StaticResource x:Key="DataGridColumnHeaderBackgroundColor" ResourceKey="SystemAltHighColor"/>
@@ -44,7 +32,34 @@
         <ResourceDictionary x:Key="Light">
             <SolidColorBrush x:Key="InvalidBrush" Color="#C50500"/>
             <SolidColorBrush x:Key="FillerGridLinesBrush" Color="Transparent"/>
+
+            <StaticResource x:Key="DataGridHeaderBackgroundBrush" ResourceKey="SolidBackgroundFillColorBase"/>
+            <StaticResource x:Key="DataGridCellCurrentBorderBrush" ResourceKey="SystemAccentColor"/>
+            <StaticResource x:Key="DataGridCellSelectedBackgroundBrush" ResourceKey="SolidBackgroundFillColorBase"/>
+
             <SolidColorBrush x:Key="ScrollBarsSeparatorBackground" Color="{StaticResource SystemChromeMediumColor}" Opacity="0.9"/>
+            <StaticResource x:Key="DataGridColumnHeaderForegroundBrush" ResourceKey="SystemControlForegroundBaseMediumBrush"/>
+            <StaticResource x:Key="DataGridColumnHeaderBackgroundColor" ResourceKey="SystemAltHighColor"/>
+            <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundBrush" Color="{StaticResource DataGridColumnHeaderBackgroundColor}"/>
+            <StaticResource x:Key="DataGridColumnHeaderHoveredBackgroundColor" ResourceKey="SystemListLowColor"/>
+            <StaticResource x:Key="DataGridColumnHeaderPressedBackgroundColor" ResourceKey="SystemListMediumColor"/>
+            <StaticResource x:Key="DataGridColumnHeaderDraggedBackgroundBrush" ResourceKey="SystemControlBackgroundChromeMediumLowBrush"/>
+            <StaticResource x:Key="DataGridColumnHeaderPointerOverBrush" ResourceKey="SystemControlHighlightListLowBrush"/>
+            <StaticResource x:Key="DataGridColumnHeaderPressedBrush" ResourceKey="SystemControlHighlightListMediumBrush"/>
+            <StaticResource x:Key="DataGridRowGroupHeaderBackgroundBrush" ResourceKey="SystemControlBackgroundChromeMediumBrush"/>
+            <StaticResource x:Key="DataGridRowGroupHeaderPressedBackgroundBrush" ResourceKey="SystemControlBackgroundListMediumBrush"/>
+            <StaticResource x:Key="DataGridRowGroupHeaderForegroundBrush" ResourceKey="SystemControlForegroundBaseHighBrush"/>
+            <StaticResource x:Key="DataGridRowHoveredBackgroundColor" ResourceKey="SystemListLowColor"/>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="HighContrast">
+            <SolidColorBrush x:Key="InvalidBrush" Color="#FFFF00"/>
+            <SolidColorBrush x:Key="FillerGridLinesBrush" Color="Transparent"/>
+            
+            <StaticResource x:Key="DataGridHeaderBackgroundBrush" ResourceKey="SolidBackgroundFillColorBase"/>
+            <StaticResource x:Key="DataGridCellCurrentBorderBrush" ResourceKey="SystemAccentColor"/>
+            <StaticResource x:Key="DataGridCellSelectedBackgroundBrush" ResourceKey="SolidBackgroundFillColorBase"/>
+
+            <StaticResource x:Key="ScrollBarsSeparatorBackground" ResourceKey="SystemControlPageBackgroundChromeLowBrush"/>
             <StaticResource x:Key="DataGridColumnHeaderForegroundBrush" ResourceKey="SystemControlForegroundBaseMediumBrush"/>
             <StaticResource x:Key="DataGridColumnHeaderBackgroundColor" ResourceKey="SystemAltHighColor"/>
             <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundBrush" Color="{StaticResource DataGridColumnHeaderBackgroundColor}"/>
@@ -62,7 +77,8 @@
 
     <SolidColorBrush x:Key="SystemControlGridLinesBaseMediumLowBrush" Color="{StaticResource SystemBaseMediumLowColor}" Opacity="0.4"/>
     <SolidColorBrush x:Key="SystemControlRowGroupHeaderBackgroundMediumBrush" Color="{StaticResource SystemChromeMediumColor}"/>
-    <SolidColorBrush x:Key="DataGridCurrencyVisualPrimaryBrush" Color="Transparent"/>
+
+    <SolidColorBrush x:Key="DataGridTransparentBrush" Color="Transparent"/>
 
     <x:String x:Key="SortIconAscending">&#xE74A;</x:String>
     <x:String x:Key="SortIconDescending">&#xE74B;</x:String>
@@ -303,7 +319,7 @@
                             <Grid.Resources>
                                 <!--Start: TopLeftHeaderTemplate-->
                                 <ControlTemplate x:Key="TopLeftHeaderTemplate" TargetType="local:DataGridColumnHeader">
-                                    <Grid x:Name="TopLeftHeaderRoot">
+                                    <Grid x:Name="TopLeftHeaderRoot" Background="{ThemeResource DataGridHeaderBackgroundBrush}">
                                         <Border BorderThickness="0,0,1,0" BorderBrush="{ThemeResource GridLinesBrush}"/>
                                         <FontIcon Glyph="{ThemeResource TopLeftHeaderIcon}" 
                                                   FontSize="16"
@@ -338,9 +354,10 @@
                             </Grid.ColumnDefinitions>
 
                             <local:DataGridColumnHeader x:Name="TopLeftCornerHeader" Template="{StaticResource TopLeftHeaderTemplate}"/>
-                            <local:DataGridColumnHeadersPresenter x:Name="ColumnHeadersPresenter" Grid.Column="1" Grid.ColumnSpan="2"
+                            <local:DataGridColumnHeadersPresenter x:Name="ColumnHeadersPresenter"  Grid.Column="1" Grid.ColumnSpan="2"
+                                                                  Background="{ThemeResource DataGridHeaderBackgroundBrush}"
                                 AutomationProperties.AccessibilityView="Raw"/>
-                            <local:DataGridRowHeadersPresenter x:Name="RowHeadersPresenter" Grid.Row="1" Grid.RowSpan="2"
+                            <local:DataGridRowHeadersPresenter x:Name="RowHeadersPresenter"   Grid.Row="1" Grid.RowSpan="2"
                                 AutomationProperties.AccessibilityView="Raw"/>
                             
                             <!-- Use TopRightCornerHeader when ColumnHeadersPresenter's Grid.ColumnSpan is 1 and the vertical ScrollBar does not paint on top of the cells -->
@@ -386,18 +403,22 @@
                 <ControlTemplate TargetType="local:DataGridCell">
                     <Grid x:Name="CellRoot" Background="{TemplateBinding Background}">
                         <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup x:Name="CurrentStates">
-                                <VisualState x:Name="Regular"/>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal"/>
                                 <VisualState x:Name="Current">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="CurrencyVisual" Storyboard.TargetProperty="Opacity" To="1" Duration="0"/>
-                                        <DoubleAnimation Storyboard.TargetName="FocusVisual" Storyboard.TargetProperty="Opacity" To="0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="BackgroundRectangle" Storyboard.TargetProperty="StrokeThickness" To="1" Duration="0"/>                                        
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundRectangle" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource DataGridTransparentBrush}" />
+                                        </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
-                                <VisualState x:Name="CurrentWithFocus">
+                                <VisualState x:Name="Selected">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="CurrencyVisual" Storyboard.TargetProperty="Opacity" To="1" Duration="0"/>
-                                        <DoubleAnimation Storyboard.TargetName="FocusVisual" Storyboard.TargetProperty="Opacity" To="1" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="BackgroundRectangle" Storyboard.TargetProperty="StrokeThickness" To="0" Duration="0"/>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundRectangle" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource DataGridCellSelectedBackgroundBrush}" />
+                                        </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
@@ -415,16 +436,18 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                        <Rectangle x:Name="CurrencyVisual" Stroke="{ThemeResource DataGridCurrencyVisualPrimaryBrush}" StrokeThickness="1" Fill="Transparent"
-                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False" Opacity="0"/>
-                        <Grid x:Name="FocusVisual" IsHitTestVisible="False" Opacity="0">
-                            <Rectangle Stroke="{ThemeResource DataGridCellFocusVisualPrimaryBrush}" StrokeThickness="2" Fill="Transparent"
-                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False"/>
-                            <Rectangle Stroke="{ThemeResource DataGridCellFocusVisualSecondaryBrush}" StrokeThickness="1" Fill="Transparent"
-                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False" Margin="2"/>
-                        </Grid>
-
+                        <Rectangle x:Name="BackgroundRectangle" 
+                                   Stretch="Fill"
+                                   IsHitTestVisible="False"
+                                   Fill="{ThemeResource DataGridTransparentBrush}" 
+                                   StrokeThickness="0"
+                                   Stroke="{ThemeResource DataGridCellCurrentBorderBrush}" />
+                        
                         <ContentPresenter
                             Content="{TemplateBinding Content}"
                             ContentTemplate="{TemplateBinding ContentTemplate}"
@@ -433,7 +456,8 @@
 
                         <Rectangle x:Name="InvalidVisualElement" IsHitTestVisible="False" StrokeThickness="1" Stroke="{ThemeResource DataGridCellInvalidBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0"/>
 
-                        <Rectangle x:Name="RightGridLine" Grid.Column="1" VerticalAlignment="Stretch" Width="1" Fill="{ThemeResource DataGridFillerColumnGridLinesBrush}"/>
+                        <Rectangle x:Name="RightGridLine" Grid.Column="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Width="1" Fill="{ThemeResource GridLinesBrush}"/>
+                        <Rectangle x:Name="BottomGridLine" Grid.Row="1" HorizontalAlignment="Stretch" Height="1" Fill="{ThemeResource GridLinesBrush}"/>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -452,12 +476,12 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:DataGridColumnHeader">
-                    <Grid x:Name="ColumnHeaderRoot">
+                    <Grid x:Name="ColumnHeaderRoot" >
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
                                     <Storyboard>
-                                        <ColorAnimation Storyboard.TargetName="BackgroundRectangle" Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)" Duration="0" To="{ThemeResource DataGridColumnHeaderBackgroundColor}"/>
+                                        <ColorAnimation Storyboard.TargetName="BackgroundRectangle" Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)" Duration="0" To="{ThemeResource DataGridHeaderBackgroundBrush}"/>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
@@ -502,7 +526,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Rectangle x:Name="BackgroundRectangle" Stretch="Fill" Fill="{ThemeResource DataGridColumnHeaderBackgroundBrush}" Grid.ColumnSpan="2"/>
+                        <Rectangle x:Name="BackgroundRectangle" Stretch="Fill" Fill="{ThemeResource DataGridTransparentBrush}" Grid.ColumnSpan="2"/>
 
                         <Grid HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Margin="{TemplateBinding Padding}">
                             <Grid.ColumnDefinitions>
@@ -530,10 +554,10 @@
     </Style>
 
     <Style TargetType="local:DataGridRowHeader">
-        <Setter Property="Background" Value="{ThemeResource DataGridRowHeaderBackgroundBrush}"/>
+        <Setter Property="Background" Value="{ThemeResource DataGridHeaderBackgroundBrush}"/>
         <Setter Property="IsTabStop" Value="False"/>
         <Setter Property="SeparatorBrush" Value="{ThemeResource GridLinesBrush}"/>
-        <Setter Property="SeparatorVisibility" Value="Collapsed"/>
+        <Setter Property="SeparatorVisibility" Value="Visible"/>
         <Setter Property="AutomationProperties.AccessibilityView" Value="Raw"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -665,48 +689,19 @@
 
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
-                            <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Border BorderBrush="{TemplateBinding SeparatorBrush}" BorderThickness="0,0,1,0" Grid.RowSpan="3" Grid.ColumnSpan="2">
+                        <Border BorderBrush="{TemplateBinding SeparatorBrush}" BorderThickness="0,0,1,0" Grid.RowSpan="2">
                             <Grid Background="{TemplateBinding Background}">
                                 <Rectangle x:Name="RowInvalidVisualElement" Stretch="Fill" Fill="{ThemeResource DataGridRowInvalidBrush}" Opacity="0"/>
                                 <Rectangle x:Name="BackgroundRectangle" Stretch="Fill" Fill="Transparent"/>
                             </Grid>
                         </Border>
 
-                        <Rectangle x:Name="HorizontalSeparator" Grid.ColumnSpan="2" Grid.Row="2" Height="1" Margin="1,0,1,0" HorizontalAlignment="Stretch" Fill="{TemplateBinding SeparatorBrush}" Visibility="{TemplateBinding SeparatorVisibility}"/>
-
-                        <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Column="1" Grid.RowSpan="2"/>
-
-                        <!-- For optional row currency glyph
-                        <Path x:Name="CurrentRowGlyph" VerticalAlignment="Center" HorizontalAlignment="Center" Width="6" Height="10" Margin="8,0,8,0" Grid.RowSpan="2" Stretch="Fill" Opacity="0" Data="F1 M 511.047,352.682L 511.047,342.252L 517.145,347.467L 511.047,352.682 Z ">
-                            <Path.Fill>
-                                <LinearGradientBrush StartPoint="0,-.15" EndPoint="0,1.75">
-                                    <GradientStop Color="#FF84E3FF" Offset="0"/>
-                                    <GradientStop Color="#FF6ABFD8" Offset="0.5"/>
-                                    <GradientStop Color="#FF5297AB" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Path.Fill>
-                        </Path>
-                        -->
-                        <!-- For optional row editing glyph
-                        <Path x:Name="EditingRowGlyph" VerticalAlignment="Center" HorizontalAlignment="Center" Width="6" Height="10" Margin="8,0,8,0" Grid.RowSpan="2" Stretch="Fill" Opacity="0" Data="F1 M 511.047,352.682L 511.047,342.252L 517.145,347.467L 511.047,352.682 Z ">
-                            <Path.Fill>
-                                <LinearGradientBrush StartPoint="0,-.15" EndPoint="0,1.75">
-                                    <GradientStop Color="#FF84E3FF" Offset="0"/>
-                                    <GradientStop Color="#FF6ABFD8" Offset="0.5"/>
-                                    <GradientStop Color="#FF5297AB" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Path.Fill>
-                        </Path>
-                        -->
+                        <Rectangle x:Name="HorizontalSeparator" Grid.Row="1" Height="1"  HorizontalAlignment="Stretch" 
+                                   Fill="{TemplateBinding SeparatorBrush}" Visibility="{TemplateBinding SeparatorVisibility}"/>
+                        <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" HorizontalAlignment="Center" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
