@@ -57,6 +57,14 @@ namespace ZyunUI
             SeparatorCollapsedWithoutAnimation
         }
 
+        private enum CellsSelectionMode
+        {
+            No,
+            Columns,
+            Rows,
+            Range
+        }
+
 #if FEATURE_VALIDATION_SUMMARY
         private const string DATAGRID_elementValidationSummary = "ValidationSummary";
 #endif
@@ -144,8 +152,9 @@ namespace ZyunUI
        
         private readonly List<DataGridRow> m_rows = new List<DataGridRow>();
         private Size? _datagridAvailableSize;
-     
-        private GridCellRef _currentCell = null;
+
+        private CellsSelectionMode _cellsSelectionMode = CellsSelectionMode.No;
+        private GridCellRange _cellsSelection = null;
 
         /// <summary>
         /// Occurs when the <see cref="ZyunUI.Controls.DataGridColumn.DisplayIndex"/>
@@ -454,8 +463,6 @@ namespace ZyunUI
             private set;
         }
 
-        
-
         internal int NoCurrentCellChangeCount
         {
             get
@@ -478,12 +485,6 @@ namespace ZyunUI
         {
             get;
             set;
-        }
-
-        internal double HorizontalAdjustment
-        {
-            get;
-            private set;
         }
 
         // the sum of the widths in pixels of the scrolling columns preceding
@@ -980,7 +981,6 @@ namespace ZyunUI
             object dataItem;
             AdvancedCollectionView collectionView = CollectionView;
 
-           
             double width = 0;
 
             Size desiredSize = new Size();
@@ -1001,6 +1001,8 @@ namespace ZyunUI
             }
 
             DataGridRowHeader rowHeader = new DataGridRowHeader();
+            rowHeader.EnsureStyle(null);
+
             TextBlock textBlock = RowHeaderColumn.GenerateRowHeader(null);
             rowHeader.Content = textBlock;
            
@@ -1789,21 +1791,113 @@ namespace ZyunUI
             return false;
         }
 
-        internal GridCellRef CurrentCell
+        private GridCellRef _currentCell = new GridCellRef(-1, -1);
+        public GridCellRef CurrentCell
         {
-            get
-            {
-                return _currentCell;
-            }
-
+            get { return _currentCell; }
             set
             {
-                _currentCell = value;
+                if(_currentCell.Equals(value)) return;
+               
+                GridCellRef oldCell = _currentCell;
+
+                GridCellRef cell = value;
+                if (cell.Column < 0 || cell.Column >= ColumnCount ||
+                    cell.Row < 0 || cell.Row > RowCount)
+                {
+                    _currentCell = new GridCellRef();
+                }
+                else
+                {
+                    _currentCell = cell;
+                }
+                OnCurrentCellChanged(oldCell, _currentCell);
             }
         }
 
-        internal int CurrentColumn => _currentCell == null ? -1 : _currentCell.Column;
-        internal int CurrentRow => _currentCell == null ? -1 : _currentCell.Row;
+        public void ClearSelection()
+        {
+            _cellsSelection = null;
+            _cellsSelectionMode = CellsSelectionMode.No;
+            if(_cellsPresenter != null)
+            {
+                _cellsPresenter.ApplyCellState();
+            }
+        }
+
+        public void SelectRange(GridCellRef cellRef)
+        {
+            SelectRange(cellRef, CurrentCell);
+        }
+
+        public void SelectRange(GridCellRef cell1, GridCellRef cell2)
+        {
+            if (!cell1.IsValid || !cell2.IsValid) return;
+
+            _cellsSelection = new GridCellRange(cell1, cell2);
+            _cellsSelectionMode = CellsSelectionMode.Range;
+
+            if (_cellsPresenter != null)
+            {
+                _cellsPresenter.ApplyCellState();
+            }
+        }
+
+        public bool CellIsSelected(GridCellRef cellRef)
+        {
+            if (CurrentCell.IsValid && CurrentCell.Equals(cellRef)) return false;
+            if(_cellsSelectionMode == CellsSelectionMode.Range)
+            {
+                return _cellsSelection.IsContained(cellRef);
+            }
+            else if(_cellsSelectionMode == CellsSelectionMode.Columns)
+            {
+                if(cellRef.Column >= _cellsSelection.LeftColumn && cellRef.Column <= _cellsSelection.RightColumn)
+                {
+                    return true;
+                }
+            }
+            else if (_cellsSelectionMode == CellsSelectionMode.Rows)
+            {
+                if (cellRef.Row >= _cellsSelection.TopRow && cellRef.Row <= _cellsSelection.BottomRow)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal bool CellIsSelectedForState(GridCellRef cellRef)
+        {
+            if (CurrentCell.IsValid && CurrentCell.Equals(cellRef)) return false;
+            return CellIsSelected(cellRef);
+        }
+
+        private void OnCurrentCellChanged(GridCellRef oldCurrentCell, GridCellRef newCurrentCell)
+        {
+            if (oldCurrentCell.IsValid)
+            {
+                DataGridCell gridCell = DisplayData.GetDataGridCell(oldCurrentCell);
+                if (gridCell != null) gridCell.ApplyCellState(true);
+            }
+
+            if (newCurrentCell.IsValid)
+            {
+                DataGridCell gridCell = DisplayData.GetDataGridCell(newCurrentCell);
+                if (gridCell != null) gridCell.ApplyCellState(true);
+            }
+        }
+
+        internal void UpdateCellsState()
+        {
+            if (_cellsPresenter != null)
+            {
+                _cellsPresenter.ApplyCellState();
+            }
+        }
+
+        internal int CurrentColumnIndex =>  CurrentCell.Column;
+        internal int CurrentRowIndex => CurrentCell.Row;
 
         private void ClearRows(bool recycle)
         {

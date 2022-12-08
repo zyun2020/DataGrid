@@ -175,7 +175,7 @@ namespace ZyunUI
         internal void OnColumnCollectionChanged_PostNotification(bool columnsGrew)
         {
             if (columnsGrew &&
-                this.CurrentColumn == -1)
+                this.CurrentColumnIndex == -1)
             { ;
             }
 
@@ -366,7 +366,7 @@ namespace ZyunUI
         internal void OnColumnReadOnlyStateChanging(DataGridColumn dataGridColumn, bool isReadOnly)
         {
             DiagnosticsDebug.Assert(dataGridColumn != null, "Expected non-null dataGridColumn.");
-            if (isReadOnly && this.CurrentColumn== dataGridColumn.Index)
+            if (isReadOnly && this.CurrentColumnIndex == dataGridColumn.Index)
             {
                 // Edited column becomes read-only. Exit editing mode.
                 if (!EndCellEdit(DataGridEditAction.Commit, true /*exitEditingMode*/, this.ContainsFocus /*keepFocus*/, true /*raiseEvents*/))
@@ -786,10 +786,6 @@ namespace ZyunUI
                             cx = displayWidth;
                         }
 
-                        // Make sure the HorizontalAdjustment is not greater than the new HorizontalOffset
-                        // since it would cause an assertion failure in DataGridCellsPresenter.ShouldDisplayCell
-                        // called by DataGridCellsPresenter.MeasureOverride.
-                        this.HorizontalAdjustment = Math.Min(this.HorizontalAdjustment, _horizontalOffset);
                     }
 
                     // second try to scroll entire columns

@@ -53,7 +53,7 @@ namespace ZyunUI
                 DataGridRowVisuals rowVisuals;
                 DataGridRowHeader rowHeader;
 
-                Rect child = new Rect(0, 0, finalSize.Width, 0);
+                Rect child = new Rect(0, -OwningGrid.NegVerticalOffset, finalSize.Width, 0);
                 for (int i = 0; i < displayData.NumDisplayedRows; i++)
                 {
                     rowVisuals = displayData.GetDisplayedRow(i);

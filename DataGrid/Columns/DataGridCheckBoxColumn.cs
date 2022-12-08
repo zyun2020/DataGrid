@@ -116,7 +116,7 @@ namespace ZyunUI
             if (EnsureOwningGrid())
             {
                 if (cell.RowIndex != -1 && cell.ColumnIndex != -1 &&
-                    cell.ColumnIndex == this.OwningGrid.CurrentColumn)
+                    cell.ColumnIndex == this.OwningGrid.CurrentColumnIndex)
                 {
                     isEnabled = true;
                     if (_currentCheckBox != null)

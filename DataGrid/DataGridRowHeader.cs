@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using ZyunUI.DataGridInternals;
 using ZyunUI.Utilities;
 
 namespace ZyunUI
@@ -207,15 +208,35 @@ namespace ZyunUI
                 typeof(DataGridRowHeader),
                 new PropertyMetadata(Visibility.Visible));
 
-        
-        private DataGridRow OwningRow
+
+        internal DataGrid OwningGrid
         {
             get;
             set;
-             
         }
 
-        internal DataGrid OwningGrid
+        internal DataGridColumn OwningColumn
+        {
+            get
+            {
+                return OwningGrid == null ? null : OwningGrid.RowHeaderColumn;
+            }
+        }
+
+        internal int RowIndex
+        {
+            get
+            {
+                if (this.OwningRow == null)
+                {
+                    return -1;
+                }
+
+                return this.OwningRow.DataIndex;
+            }
+        }
+
+        internal DataGridRowVisuals OwningRow
         {
             get;
             set;
@@ -252,10 +273,14 @@ namespace ZyunUI
         /// <summary>
         /// Ensures that the correct Style is applied to this object.
         /// </summary>
-        /// <param name="previousStyle">Caller's previous associated Style</param>
+        /// <param name="previousStyle">Caller's previous associated Style</param>         
         internal void EnsureStyle(Style previousStyle)
         {
             if (this.Style != null &&
+                //this.OwningRow != null &&
+                //this.Style != this.OwningRow.HeaderStyle &&
+                this.OwningColumn != null &&
+                this.Style != this.OwningColumn.CellStyle &&
                 this.OwningGrid != null &&
                 this.Style != this.OwningGrid.RowHeaderStyle &&
                 this.Style != previousStyle)
@@ -264,6 +289,11 @@ namespace ZyunUI
             }
 
             Style style = null;
+            if (this.OwningColumn != null)
+            {
+                style = this.OwningColumn.CellStyle;
+            }
+
             if (style == null && this.OwningGrid != null)
             {
                 style = this.OwningGrid.RowHeaderStyle;

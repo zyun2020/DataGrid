@@ -14,6 +14,7 @@ using static ZyunUI.DataGridInternals.DataGridError;
 using System.Security;
 using System.Text;
 using DiagnosticsDebug = System.Diagnostics.Debug;
+using ZyunUI.DataGridInternals;
 
 namespace ZyunUI
 {
@@ -204,7 +205,7 @@ namespace ZyunUI
         {
             if (e.Key == VirtualKey.Tab && e.OriginalSource as Control == this)
             {
-                if (this.CurrentColumn == -1)
+                if (this.CurrentColumnIndex == -1)
                 {
                     if (this.ColumnHeaders != null && this.AreColumnHeadersVisible && !this.ColumnHeaderHasFocus)
                     {
@@ -296,10 +297,8 @@ namespace ZyunUI
 
         private void DataGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
-            if (e.Handled)
-            {
-                return;
-            }
+            if (e.Handled) return;
+           
 
             // Show the scroll bars as soon as a pointer is pressed on the DataGrid.
             ShowScrollBars();
@@ -307,7 +306,7 @@ namespace ZyunUI
 
         private void DataGrid_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
-            if (this.CurrentColumn != -1 && this.CurrentRow != -1)
+            if (this.CurrentColumnIndex != -1 && this.CurrentRowIndex != -1)
             {
                 e.Handled = true;
             }
@@ -344,6 +343,63 @@ namespace ZyunUI
         {
             _showingMouseIndicators = false;
             _keepScrollBarsShowing = false;
+        }
+
+       
+        internal GridCellRef GetGridCellRef(Point pos)
+        {
+            double cellLeftEdge;
+            double frozenLeftEdge = 0;
+            double scrollingLeftEdge = -this.HorizontalOffset;
+
+            int columnIndex = -1;
+            var columns = this.ColumnsInternal.GetVisibleColumns();
+            foreach (DataGridColumn column in columns)
+            {
+                if (column.IsFrozen)
+                {
+                    cellLeftEdge = frozenLeftEdge;
+                    frozenLeftEdge += column.ActualWidth;
+                    if(pos.X > cellLeftEdge && pos.X <= frozenLeftEdge && cellLeftEdge < this.CellsViewWidth)
+                    {
+                        columnIndex = column.Index;
+                        break;
+                    }
+                }
+                else
+                {
+                    cellLeftEdge = scrollingLeftEdge;
+                    scrollingLeftEdge += column.ActualWidth;
+                    if (cellLeftEdge < frozenLeftEdge) cellLeftEdge = frozenLeftEdge;
+
+                    if (pos.X > cellLeftEdge && pos.X <= scrollingLeftEdge &&
+                        cellLeftEdge < this.CellsViewWidth && scrollingLeftEdge > frozenLeftEdge)
+                    {
+                        columnIndex = column.Index;
+                        break;
+                    }
+                }
+            }
+
+            if (columnIndex >= 0)
+            {
+                DataGridDisplayData displayData = this.DisplayData;
+                DataGridRowVisuals rowVisuals = null;
+                double y0 = -NegVerticalOffset;
+                for (int i = 0; i < displayData.NumDisplayedRows; i++)
+                {
+                    rowVisuals = displayData.GetDisplayedRow(i);
+                    if (pos.Y > y0 && pos.Y <= y0 + rowVisuals.DisplayHeight)
+                    {
+                        if (columnIndex < rowVisuals.CellCount)
+                            return new GridCellRef(rowVisuals.DataIndex, columnIndex);
+
+                        break;
+                    }
+                    y0 += rowVisuals.DisplayHeight;
+                }
+            }
+            return new GridCellRef();
         }
     }
 }

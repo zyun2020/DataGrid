@@ -18,6 +18,16 @@ namespace ZyunUI
             this.BottomRight = new GridCellRef(Math.Max(cell1.Row, cell2.Row), Math.Max(cell1.Column, cell2.Column));
         }
 
+        public bool IsContained(GridCellRef cell)
+        {
+            if(cell.Column >= LeftColumn && cell.Column <= RightColumn &&
+                cell.Row >= TopRow && cell.Row <= BottomRow)
+            {
+                return true;
+            }
+            return false;
+        }
+
         /// <summary>
         /// Gets the top left cell.
         /// </summary>

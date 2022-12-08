@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using Windows.Foundation;
+using Microsoft.UI.Input;
 using ZyunUI.DataGridInternals;
 using ZyunUI.Utilities;
 
@@ -20,6 +21,56 @@ namespace ZyunUI
             this.ManipulationStarting += new ManipulationStartingEventHandler(DataGridRowsPresenter_ManipulationStarting);
             this.ManipulationStarted += new ManipulationStartedEventHandler(DataGridRowsPresenter_ManipulationStarted);
             this.ManipulationDelta += new ManipulationDeltaEventHandler(DataGridRowsPresenter_ManipulationDelta);
+            this.PointerPressed += DataGridCellsPresenter_PointerPressed;
+            this.PointerMoved += DataGridCellsPresenter_PointerMoved;
+            this.PointerReleased += DataGridCellsPresenter_PointerReleased;
+        }
+
+        private bool IsPointerPressed
+        {
+            get;
+            set;
+        }
+
+        private void DataGridCellsPresenter_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            IsPointerPressed = false;
+        }
+
+        private void DataGridCellsPresenter_PointerMoved(object sender, PointerRoutedEventArgs e)
+        {
+            PointerPoint expPointer = e.GetCurrentPoint(this);
+            if (e.Pointer.PointerDeviceType == PointerDeviceType.Mouse && !expPointer.Properties.IsLeftButtonPressed)
+            {
+                return;
+            }
+
+            if (OwningGrid.CurrentCell.IsValid && IsPointerPressed)
+            {
+                GridCellRef cellRef = OwningGrid.GetGridCellRef(expPointer.Position);
+                if (cellRef.IsValid)
+                {
+                    OwningGrid.SelectRange(cellRef);
+                }
+            }
+        }
+
+        private void DataGridCellsPresenter_PointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            PointerPoint expPointer = e.GetCurrentPoint(this);
+            if (e.Pointer.PointerDeviceType == PointerDeviceType.Mouse && !expPointer.Properties.IsLeftButtonPressed)
+            {
+                return;
+            }
+
+            IsPointerPressed = true;
+            GridCellRef cellRef = OwningGrid.GetGridCellRef(expPointer.Position);
+            if (cellRef.IsValid)
+            {
+                OwningGrid.ClearSelection();
+                OwningGrid.CurrentCell = cellRef;
+                e.Handled = true;
+            } 
         }
 
         internal DataGrid OwningGrid
@@ -28,7 +79,14 @@ namespace ZyunUI
             set;
         }
 
-      
+        internal void ApplyCellState()
+        {
+            foreach(DataGridCell cell in this.Children)
+            {
+                cell.ApplyCellState(false);
+            }
+        }
+
         protected override Size MeasureOverride(Size availableSize)
         {
             OwningGrid.OnPendingVerticalScroll();
@@ -48,7 +106,7 @@ namespace ZyunUI
             var columns = this.OwningGrid.ColumnsInternal.GetVisibleColumns();
             Rect rcChild = new Rect();
             rcChild.X = 0;
-            rcChild.Y = 0;
+            rcChild.Y = -OwningGrid.NegVerticalOffset;
 
             double frozenLeftEdge;
             double scrollingLeftEdge;
@@ -130,13 +188,13 @@ namespace ZyunUI
                 return false;
             }
 
-            scrollingLeftEdge += this.OwningGrid.HorizontalAdjustment;
             double leftEdge = column.IsFrozen ? frozenLeftEdge : scrollingLeftEdge;
             double rightEdge = leftEdge + column.ActualWidth;
             return DoubleUtil.GreaterThan(rightEdge, 0) &&
                 DoubleUtil.LessThanOrClose(leftEdge, this.OwningGrid.CellsViewWidth) &&
                 DoubleUtil.GreaterThan(rightEdge, frozenLeftEdge); // scrolling column covered up by frozen column(s)
         }
+
 
         private void DataGridRowsPresenter_ManipulationStarting(object sender, ManipulationStartingRoutedEventArgs e)
         {

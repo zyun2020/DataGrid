@@ -5,9 +5,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+using Windows.Foundation;
 using ZyunUI.Utilities;
 using DiagnosticsDebug = System.Diagnostics.Debug;
 
@@ -17,13 +19,43 @@ namespace ZyunUI.DataGridInternals
     {
         private DataGridRowHeader _headerCell = null;
         private List<DataGridCell> _cells;
-        private double _displayHeight;
+     
         public DataGridRowVisuals()
-        {
-            _displayHeight = 0;
+        { 
             _cells = new List<DataGridCell>();
         }
 
+        internal void SetRowInfo(int index, object dataItem, double displayHeight, bool isReused)
+        {
+            DataIndex = index;
+            DataItem = dataItem;
+            DisplayHeight = displayHeight;
+
+            SetElementInfo(dataItem, displayHeight, isReused);
+        }
+
+        private void SetElementInfo(object dataItem, double displayHeight, bool isReused)
+        {
+            if (_headerCell != null)
+            {
+                _headerCell.DataContext = dataItem;
+                _headerCell.Height = displayHeight;
+                _headerCell.OwningRow = this;
+                
+            }
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                DataGridCell cell = _cells[i];
+                cell.DataContext = dataItem;
+                cell.Height = displayHeight;
+                cell.OwningRow = this;
+            }
+        }
+
+        internal int DataIndex { get; private set; }
+        internal object DataItem { get; private set; }
+        internal double DisplayHeight { get; private set; }
+       
         internal DataGridRowHeader HeaderCell
         {
             get
@@ -32,13 +64,13 @@ namespace ZyunUI.DataGridInternals
             }
         }
 
-        internal DataGridRowHeader CreateHeaderCell(Style style)
+        internal DataGridRowHeader CreateHeaderCell()
         {
             if (_headerCell == null)
             {
                 _headerCell = new DataGridRowHeader();
-            }
-            _headerCell.SetStyleWithType(style);
+                _headerCell.EnsureStyle(null);
+            } 
             return _headerCell;
         }
 
@@ -48,14 +80,6 @@ namespace ZyunUI.DataGridInternals
             {
                 return _cells.Count;
             }
-        }
-
-       
-
-        public double DisplayHeight
-        {
-            get { return _displayHeight; }
-            set { _displayHeight = value; }
         }
 
         public IEnumerator GetEnumerator()
@@ -102,6 +126,7 @@ namespace ZyunUI.DataGridInternals
             }
         }
 
+        
     }
     internal class DataGridDisplayData
     {
@@ -160,6 +185,17 @@ namespace ZyunUI.DataGridInternals
             {
                 return _displayedRows.Count;
             }
+        }
+
+        internal DataGridCell GetDataGridCell(GridCellRef cellRef)
+        {
+            if(cellRef.Row >= FirstDisplayedRow && cellRef.Row <= LastDisplayedRow &&
+                cellRef.Column >= 0 && cellRef.Column < _owner.ColumnCount)
+            {
+                DataGridRowVisuals rowVisuals = GetDisplayedRow(cellRef.Row - FirstDisplayedRow);
+                return rowVisuals[cellRef.Column];
+            }
+            return null;
         }
 
         internal void AddRecylableRow(DataGridRowVisuals row)
@@ -299,6 +335,7 @@ namespace ZyunUI.DataGridInternals
                 }
             }
 
+            _owner.UpdateCellsState();
         }
     }
 }

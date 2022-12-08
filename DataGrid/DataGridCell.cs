@@ -33,9 +33,8 @@ namespace ZyunUI
         private Rectangle _rightGridLine;
         private Rectangle _bottomGridLine;
 
-        private bool _isCurrent = false;
         private bool _isValid = true;
-        private bool _isSelected = false;
+      
         public DataGridCell()
         {
             this.DefaultStyleKey = typeof(DataGridCell);
@@ -53,29 +52,20 @@ namespace ZyunUI
             EnsureGridLine();
         }
 
-        public bool IsCurrent
+        internal bool IsCurrent
         {
-            get { return _isCurrent; }  
-            set
+            get
             {
-                if(_isCurrent != value)
-                {
-                    _isCurrent = value;
-                    if (_isCurrent) _isSelected = false;
-                    ApplyCellState(true);
-                }
+                return this.OwningGrid.CurrentColumnIndex == this.OwningColumn.Index &&
+                       this.OwningGrid.CurrentRowIndex == this.OwningRow.DataIndex;
             }
         }
-        public bool IsSelected
+
+        internal bool IsSelected
         {
-            get { return _isSelected; }
-            set
+            get
             {
-                if (_isSelected != value)
-                {
-                    _isSelected = value;
-                    ApplyCellState(true);
-                }
+                return OwningGrid.CellIsSelected(new GridCellRef(OwningRow.DataIndex, OwningColumn.Index));
             }
         }
 
@@ -90,6 +80,12 @@ namespace ZyunUI
                     ApplyCellState(true);
                 }
             }
+        }
+
+        internal void ClearCellState()
+        {
+            VisualStates.GoToState(this, false, VisualStates.StateNormal);
+            VisualStates.GoToState(this, false, VisualStates.StateValid);
         }
 
         internal void ApplyCellState(bool animate)
@@ -199,11 +195,24 @@ namespace ZyunUI
 
         internal int RowIndex
         {
+            get
+            {
+                if (this.OwningRow == null)
+                {
+                    return -1;
+                }
+
+                return this.OwningRow.DataIndex;
+            }
+        }
+
+        internal DataGridColumn OwningColumn
+        {
             get;
             set;
         }
 
-        internal DataGridColumn OwningColumn
+        internal DataGridRowVisuals OwningRow
         {
             get;
             set;

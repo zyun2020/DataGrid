@@ -250,45 +250,49 @@ namespace ZyunUI
 
         internal DataGridRowVisuals GenerateRow(int rowIndex)
         {
-            DiagnosticsDebug.Assert(rowIndex >= 0, "Expected positive rowIndex.");
+            DiagnosticsDebug.Assert(rowIndex >= 0 && rowIndex < RowCount, "Expected rowIndex.");
+            DiagnosticsDebug.Assert(Rows.Count == CollectionView.Count, "Rows.Count must equal CollectionView.Count.");
 
-            object dataItem = null;
-            if (rowIndex < CollectionView.Count)
-                dataItem = CollectionView[rowIndex];
+            DataGridRow gridRow = Rows[rowIndex];
+            object dataItem = CollectionView[rowIndex];
 
-            DataGridRowVisuals row = DisplayData.GetUsedRow();
-            if (row == null)
+            bool isReused = true;
+            DataGridRowVisuals rowVisuals = DisplayData.GetUsedRow();
+            if (rowVisuals == null)
             {
-                row = new DataGridRowVisuals();
-                row.DisplayHeight = Rows[rowIndex].ActualHeight;
-
+                isReused = false;
+                rowVisuals = new DataGridRowVisuals();
                 FrameworkElement element;
                 var columns = Columns;
                 DataGridColumn dataGridColumn;
+                DataGridCell dataGridCell;
+
                 for (int i = 0; i < columns.Count; i++)
                 {
                     dataGridColumn = columns[i];
+                    dataGridCell = new DataGridCell();
+                    dataGridCell.EnsureStyle(null);
 
-                    DataGridCell dataGridCell = new DataGridCell();
                     dataGridCell.OwningColumn = dataGridColumn;
+                  
+                    dataGridCell.Width = dataGridColumn.ActualWidth;
 
                     element = dataGridColumn.GenerateElementInternal(dataGridCell, dataItem);
-                    element.SetStyleWithType(dataGridColumn.CellStyle);
                     dataGridCell.Content = element;
-                    dataGridCell.Width = dataGridColumn.ActualWidth;
-                    dataGridCell.Height = row.DisplayHeight;
-                    row.Insert(i, dataGridCell);
+
+                    rowVisuals.Insert(i, dataGridCell);
                 }
             }
-            row.DisplayHeight = Rows[rowIndex].ActualHeight;
 
             if (AreRowHeadersVisible)
             {
-                DataGridRowHeader headerCell = row.HeaderCell;
+                DataGridRowHeader headerCell = rowVisuals.HeaderCell;
                 if (headerCell == null)
                 {
-                    headerCell = row.CreateHeaderCell(RowHeaderColumn.CellStyle);
-                    
+                    headerCell = rowVisuals.CreateHeaderCell();
+                    headerCell.OwningGrid = this;
+                    headerCell.Width = this.ActualRowHeaderWidth;
+
                     TextBlock textBlock = RowHeaderColumn.GenerateRowHeader(dataItem);
                     headerCell.Content = textBlock;
                 }
@@ -298,12 +302,9 @@ namespace ZyunUI
                     TextBlock textBlock = headerCell.Content as TextBlock;
                     if(textBlock != null) textBlock.Text = GridCellRef.ToRowName(rowIndex);
                 }
-                headerCell.Height = row.DisplayHeight;
-                headerCell.Width = this.ActualRowHeaderWidth;
             }
-            row.UpdateDataContext(dataItem);
-
-            return row;
+            rowVisuals.SetRowInfo(rowIndex, dataItem, gridRow.ActualHeight, isReused);
+            return rowVisuals;
         }
 
         internal void InsertDisplayedElement(int displayRow, DataGridRowVisuals rowVisuals)

@@ -118,11 +118,11 @@
     <StaticResource x:Key="DataGridCellFocusVisualSecondaryBrush" ResourceKey="SystemControlFocusVisualSecondaryBrush"/>
     <StaticResource x:Key="DataGridCellInvalidBrush" ResourceKey="InvalidBrush"/>
 
-    <Style TargetType="local:DataGrid">       
+    <Style TargetType="local:DataGrid">
         <Setter Property="HorizontalGridLinesBrush" Value="{ThemeResource GridLinesBrush}"/>
+        <Setter Property="VerticalGridLinesBrush" Value="{ThemeResource GridLinesBrush}"/>
         <Setter Property="UseSystemFocusVisuals" Value="False"/>
         <Setter Property="IsTabStop" Value="True"/>
-        <Setter Property="VerticalGridLinesBrush" Value="{ThemeResource GridLinesBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:DataGrid">
@@ -407,17 +407,21 @@
                                 <VisualState x:Name="Normal"/>
                                 <VisualState x:Name="Current">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="BackgroundRectangle" Storyboard.TargetProperty="StrokeThickness" To="1" Duration="0"/>                                        
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundRectangle" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource DataGridTransparentBrush}" />
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectedRectangle" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CurrentRectangle" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible" />
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Selected">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="BackgroundRectangle" Storyboard.TargetProperty="StrokeThickness" To="0" Duration="0"/>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundRectangle" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource DataGridCellSelectedBackgroundBrush}" />
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CurrentRectangle" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectedRectangle" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible" />
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
@@ -426,27 +430,19 @@
                                 <VisualState x:Name="Valid"/>
                                 <VisualState x:Name="Invalid">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="InvalidVisualElement" Storyboard.TargetProperty="Opacity" Duration="0" To="1"/>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="InvalidVisualElement" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible" />
+                                        </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
 
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <Rectangle x:Name="BackgroundRectangle" 
-                                   Stretch="Fill"
-                                   IsHitTestVisible="False"
-                                   Fill="{ThemeResource DataGridTransparentBrush}" 
-                                   StrokeThickness="0"
-                                   Stroke="{ThemeResource DataGridCellCurrentBorderBrush}" />
+                        <Rectangle x:Name="SelectedRectangle" 
+                                    Stretch="Fill"
+                                    Visibility="Collapsed"
+                                    IsHitTestVisible="False"
+                                    Fill="{ThemeResource DataGridCellSelectedBackgroundBrush}" />
                         
                         <ContentPresenter
                             Content="{TemplateBinding Content}"
@@ -454,10 +450,30 @@
                             HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                             VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
 
-                        <Rectangle x:Name="InvalidVisualElement" IsHitTestVisible="False" StrokeThickness="1" Stroke="{ThemeResource DataGridCellInvalidBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0"/>
+                        <Rectangle x:Name="InvalidVisualElement" IsHitTestVisible="False" 
+                                    Visibility="Collapsed"
+                                    StrokeThickness="1" 
+                                    Stroke="{ThemeResource DataGridCellInvalidBrush}"/>
 
-                        <Rectangle x:Name="RightGridLine" Grid.Column="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Width="1" Fill="{ThemeResource GridLinesBrush}"/>
-                        <Rectangle x:Name="BottomGridLine" Grid.Row="1" HorizontalAlignment="Stretch" Height="1" Fill="{ThemeResource GridLinesBrush}"/>
+                        <Rectangle x:Name="RightGridLine" 
+                                   IsHitTestVisible="False" 
+                                   Visibility="Collapsed"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Stretch" Width="1" 
+                                   Fill="{ThemeResource GridLinesBrush}"/>
+                        <Rectangle x:Name="BottomGridLine" 
+                                   IsHitTestVisible="False" 
+                                   Visibility="Collapsed"
+                                   VerticalAlignment="Bottom"
+                                   HorizontalAlignment="Stretch" Height="1"
+                                   Fill="{ThemeResource GridLinesBrush}"/>
+
+                        <Rectangle x:Name="CurrentRectangle" 
+                                    Stretch="Fill"
+                                    Visibility="Collapsed"
+                                    IsHitTestVisible="False"
+                                    StrokeThickness="2"
+                                    Stroke="{ThemeResource DataGridCellCurrentBorderBrush}" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -480,9 +496,7 @@
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
-                                    <Storyboard>
-                                        <ColorAnimation Storyboard.TargetName="BackgroundRectangle" Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)" Duration="0" To="{ThemeResource DataGridHeaderBackgroundBrush}"/>
-                                    </Storyboard>
+                                     
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <Storyboard>

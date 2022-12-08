@@ -7,17 +7,23 @@ namespace ZyunUI
     /// <summary>
     /// Represents a cell reference.
     /// </summary>
-    public class GridCellRef : IEquatable<GridCellRef>
+    public struct GridCellRef : IEquatable<GridCellRef>
     {
         /// <summary>
         /// The column.
         /// </summary>
-        private readonly int column = -1;
+        private readonly int column;
 
         /// <summary>
         /// The row.
         /// </summary>
-        private readonly int row = -1;
+        private readonly int row;
+
+        public GridCellRef()
+        {
+            this.row = -1;
+            this.column = -1;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GridCellRef" /> struct.
@@ -29,6 +35,8 @@ namespace ZyunUI
             this.row = row;
             this.column = column;
         }
+
+        public bool IsValid => (column < 0 || row < 0) ? false : true;
 
         /// <summary>
         /// Gets the column.
