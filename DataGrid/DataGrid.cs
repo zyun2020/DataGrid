@@ -1,3 +1,4 @@
+using System.Numerics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -79,6 +80,10 @@ namespace ZyunUI
         private const string DATAGRID_elementBottomRightCornerHeaderName = "BottomRightCorner";
         private const string DATAGRID_elementVerticalScrollBarName = "VerticalScrollBar";
 
+        private const string DATAGRID_elementCellsOverlayCanvas = "CellsOverlayCanvas";
+        private const string DATAGRID_elementCurrentCellTick = "CurrentCellTick";
+        private const string DATAGRID_elementCellsSelectionRange = "CellsSelectionRange";
+
         private const bool DATAGRID_defaultAutoGenerateColumns = true;
         private const bool DATAGRID_defaultCanUserReorderColumns = true;
         private const bool DATAGRID_defaultCanUserResizeColumns = true;
@@ -146,6 +151,10 @@ namespace ZyunUI
         private ScrollBar _vScrollBar;
         private DataGridCellsPresenter _cellsPresenter;
         private Panel _rootPanel;
+
+        private Canvas _cellsOverlayCanvas;
+        private Border _currentCellTick;
+        private Border _cellsSelectionRange;
 
         private FrameworkElement _frozenColumnScrollBarSpacer;
         private ContentControl _topLeftCornerHeader;
@@ -248,6 +257,18 @@ namespace ZyunUI
         {
             _hasNoIndicatorStateStoryboardCompletedHandler = false;
             _keepScrollBarsShowing = false;
+
+            _cellsOverlayCanvas = GetTemplateChild(DATAGRID_elementCellsOverlayCanvas) as Canvas;
+            _currentCellTick = GetTemplateChild(DATAGRID_elementCurrentCellTick) as Border;
+            if(null != _currentCellTick)
+            {
+                _currentCellTick.Visibility = Visibility.Collapsed;
+            }
+            _cellsSelectionRange = GetTemplateChild(DATAGRID_elementCellsSelectionRange) as Border;
+            if (null != _currentCellTick)
+            {
+                _cellsSelectionRange.Visibility = Visibility.Collapsed;
+            }
 
             if (_columnHeadersPresenter != null)
             {
@@ -752,17 +773,25 @@ namespace ZyunUI
             else
             {
                 bool invalidate = !this._datagridAvailableSize.HasValue || availableSize.Width != this._datagridAvailableSize.Value.Width;
+                bool invalidateHeight = this._datagridAvailableSize.HasValue && availableSize.Height != this._datagridAvailableSize.Value.Height;
+ 
                 _datagridAvailableSize = availableSize;
-                if (invalidate)
+                if (invalidate || invalidateHeight)
                 {
-                    Refresh();
+                    Refresh(invalidate, invalidateHeight);
+                    if (Double.IsFinite(CellsViewWidth) && Double.IsFinite(CellsViewHeight)) 
+                    {
+                        RectangleGeometry rg = new RectangleGeometry();
+                        rg.Rect = new Rect(0, 0, CellsViewWidth, CellsViewHeight);
+                        _cellsOverlayCanvas.Clip = rg;
+                    }
                 }
             }
 
             return base.MeasureOverride(availableSize);
         }
 
-        internal void Refresh()
+        internal void Refresh(bool invalidate, bool invalidateHeight)
         {
             if (!_datagridAvailableSize.HasValue) return;
             Size availableSize = _datagridAvailableSize.Value;
@@ -1811,16 +1840,58 @@ namespace ZyunUI
                 {
                     _currentCell = cell;
                 }
-                OnCurrentCellChanged(oldCell, _currentCell);
+                ShowCurrentCellTick();
+            }
+        }
+
+        internal void ShowCurrentCellTick()
+        {
+            if (CurrentCell.IsValid)
+            {
+                DataGridCell gridCell = DisplayData.GetDataGridCell(CurrentCell);
+                if (gridCell != null) {
+
+                    _currentCellTick.Width = gridCell.ActualWidth + 3;
+                    _currentCellTick.Height = gridCell.ActualHeight + 3;
+
+                    Vector3 pos = gridCell.ActualOffset;
+                    Canvas.SetLeft(_currentCellTick, pos.X - 2);
+                    Canvas.SetTop(_currentCellTick, pos.Y - 2);
+                    _currentCellTick.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    _currentCellTick.Visibility = Visibility.Collapsed;
+                }
+            }
+            else
+            {
+                _currentCellTick.Visibility = Visibility.Collapsed;
+            }
+        }
+        private void OnCurrentCellChanged(GridCellRef oldCurrentCell, GridCellRef newCurrentCell)
+        {
+            if (oldCurrentCell.IsValid)
+            {
+                DataGridCell gridCell = DisplayData.GetDataGridCell(oldCurrentCell);
+                if (gridCell != null) gridCell.ApplyCellState(true);
+            }
+
+            if (newCurrentCell.IsValid)
+            {
+                DataGridCell gridCell = DisplayData.GetDataGridCell(newCurrentCell);
+                if (gridCell != null) gridCell.ApplyCellState(true);
             }
         }
 
         public void ClearSelection()
         {
-            _cellsSelection = null;
-            _cellsSelectionMode = CellsSelectionMode.No;
-            if(_cellsPresenter != null)
+            if(_cellsPresenter != null && _cellsSelection != null &&
+                _cellsSelectionMode != CellsSelectionMode.No)
             {
+                _cellsSelection = null;
+                _cellsSelectionMode = CellsSelectionMode.No;
+
                 _cellsPresenter.ApplyCellState();
             }
         }
@@ -1873,21 +1944,7 @@ namespace ZyunUI
             return CellIsSelected(cellRef);
         }
 
-        private void OnCurrentCellChanged(GridCellRef oldCurrentCell, GridCellRef newCurrentCell)
-        {
-            if (oldCurrentCell.IsValid)
-            {
-                DataGridCell gridCell = DisplayData.GetDataGridCell(oldCurrentCell);
-                if (gridCell != null) gridCell.ApplyCellState(true);
-            }
-
-            if (newCurrentCell.IsValid)
-            {
-                DataGridCell gridCell = DisplayData.GetDataGridCell(newCurrentCell);
-                if (gridCell != null) gridCell.ApplyCellState(true);
-            }
-        }
-
+       
         internal void UpdateCellsState()
         {
             if (_cellsPresenter != null)

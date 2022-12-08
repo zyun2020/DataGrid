@@ -17,6 +17,7 @@
             Margin="12"
             HeadersVisibility="All"
             GridLinesVisibility="All"
+            CanSelectCells="True"
             VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
             <zyui:DataGrid.Columns>
                 <zyui:DataGridTextColumn Header="等级" Binding="{Binding Rank}" Tag="Rank" />

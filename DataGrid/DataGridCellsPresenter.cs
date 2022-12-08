@@ -35,6 +35,7 @@ namespace ZyunUI
         private void DataGridCellsPresenter_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
             IsPointerPressed = false;
+            ReleasePointerCaptures();
         }
 
         private void DataGridCellsPresenter_PointerMoved(object sender, PointerRoutedEventArgs e)
@@ -45,7 +46,7 @@ namespace ZyunUI
                 return;
             }
 
-            if (OwningGrid.CurrentCell.IsValid && IsPointerPressed)
+            if (OwningGrid.CanSelectCells && OwningGrid.CurrentCell.IsValid && IsPointerPressed)
             {
                 GridCellRef cellRef = OwningGrid.GetGridCellRef(expPointer.Position);
                 if (cellRef.IsValid)
@@ -62,6 +63,7 @@ namespace ZyunUI
             {
                 return;
             }
+            this.CapturePointer(e.Pointer);
 
             IsPointerPressed = true;
             GridCellRef cellRef = OwningGrid.GetGridCellRef(expPointer.Position);
@@ -155,6 +157,8 @@ namespace ZyunUI
 
                 rcChild.Y += rcChild.Height;
             }
+
+            OwningGrid.ShowCurrentCellTick();
 
             return base.ArrangeOverride(finalSize);
         }

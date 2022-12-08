@@ -368,6 +368,19 @@
                                                           Background="{TemplateBinding Background}"
                                                           Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2"
                                 AutomationProperties.AccessibilityView="Raw"/>
+
+                            <Canvas x:Name="CellsOverlayCanvas"
+                                Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2">
+                                <Border x:Name="CurrentCellTick" 
+                                        Visibility="Collapsed"
+                                        BorderThickness="2" 
+                                        BorderBrush="{ThemeResource DataGridCellCurrentBorderBrush}" />
+                                <Border x:Name="CellsSelectionRange"
+                                        Visibility="Collapsed"
+                                        BorderThickness="2" 
+                                        BorderBrush="{ThemeResource DataGridCellCurrentBorderBrush}" />
+                            </Canvas>
+                            
                             <Rectangle x:Name="BottomRightCorner" Fill="{ThemeResource ScrollBarsSeparatorBackground}" Opacity="0" Grid.Row="2" Grid.Column="2"/>
                             <!-- Use BottomLeftCorner when RowsPresenter's Grid.RowSpan is 1 and the horizontal ScrollBar does not paint on top of the cells -->
                             <!--<Rectangle x:Name="BottomLeftCorner" Fill="#FFE9EEF4" Grid.Row="2" Grid.ColumnSpan="2"/>-->

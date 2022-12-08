@@ -1147,5 +1147,31 @@ namespace ZyunUI
             //    }
             //}
         }
+
+        public bool CanSelectCells
+        {
+            get { return (bool)GetValue(CanSelectCellsProperty); }
+            set { SetValue(CanSelectCellsProperty, value); }
+        }
+
+        /// <summary>
+        /// Identifies the AutoGenerateColumns dependency property.
+        /// </summary>
+        public static readonly DependencyProperty CanSelectCellsProperty =
+            DependencyProperty.Register(
+                "CanSelectCells",
+                typeof(bool),
+                typeof(DataGrid),
+                new PropertyMetadata(false, CanSelectCellsPropertyChanged));
+
+        private static void CanSelectCellsPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            DataGrid dataGrid = d as DataGrid;
+            bool value = (bool)e.NewValue;
+            if (!value)
+            {
+                dataGrid.ClearSelection();
+            }
+        }
     }
 }

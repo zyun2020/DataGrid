@@ -98,7 +98,7 @@ namespace ZyunUI
             // CommonStates
             if (this.IsCurrent)
             {
-                VisualStates.GoToState(this, animate, VisualStates.StateCurrent, VisualStates.StateNormal);
+                //VisualStates.GoToState(this, animate, VisualStates.StateCurrent, VisualStates.StateNormal);
             }
             else if (this.IsSelected)
             {
