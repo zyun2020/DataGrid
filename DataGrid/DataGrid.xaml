@@ -371,14 +371,16 @@
 
                             <Canvas x:Name="CellsOverlayCanvas"
                                 Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2">
-                                <Border x:Name="CurrentCellTick" 
+                                <Border x:Name="CurrentCellContainer" 
                                         Visibility="Collapsed"
                                         BorderThickness="2" 
-                                        BorderBrush="{ThemeResource DataGridCellCurrentBorderBrush}" />
+                                        BorderBrush="{ThemeResource DataGridCellCurrentBorderBrush}">
+                                    <local:DataGridCell x:Name="EditElementContainerCell"/>
+                                </Border>
                                 <Border x:Name="CellsSelectionRange"
-                                        Visibility="Collapsed"
-                                        BorderThickness="2" 
-                                        BorderBrush="{ThemeResource DataGridCellCurrentBorderBrush}" />
+                                    Visibility="Collapsed"
+                                    BorderThickness="2" 
+                                    BorderBrush="{ThemeResource DataGridCellCurrentBorderBrush}" />
                             </Canvas>
                             
                             <Rectangle x:Name="BottomRightCorner" Fill="{ThemeResource ScrollBarsSeparatorBackground}" Opacity="0" Grid.Row="2" Grid.Column="2"/>
@@ -418,21 +420,8 @@
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal"/>
-                                <VisualState x:Name="Current">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectedRectangle" Storyboard.TargetProperty="Visibility">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CurrentRectangle" Storyboard.TargetProperty="Visibility">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
                                 <VisualState x:Name="Selected">
                                     <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CurrentRectangle" Storyboard.TargetProperty="Visibility">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed" />
-                                        </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectedRectangle" Storyboard.TargetProperty="Visibility">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="Visible" />
                                         </ObjectAnimationUsingKeyFrames>
@@ -480,13 +469,6 @@
                                    VerticalAlignment="Bottom"
                                    HorizontalAlignment="Stretch" Height="1"
                                    Fill="{ThemeResource GridLinesBrush}"/>
-
-                        <Rectangle x:Name="CurrentRectangle" 
-                                    Stretch="Fill"
-                                    Visibility="Collapsed"
-                                    IsHitTestVisible="False"
-                                    StrokeThickness="2"
-                                    Stroke="{ThemeResource DataGridCellCurrentBorderBrush}" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>

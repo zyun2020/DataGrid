@@ -21,9 +21,6 @@ namespace ZyunUI
             this.ManipulationStarting += new ManipulationStartingEventHandler(DataGridRowsPresenter_ManipulationStarting);
             this.ManipulationStarted += new ManipulationStartedEventHandler(DataGridRowsPresenter_ManipulationStarted);
             this.ManipulationDelta += new ManipulationDeltaEventHandler(DataGridRowsPresenter_ManipulationDelta);
-            this.PointerPressed += DataGridCellsPresenter_PointerPressed;
-            this.PointerMoved += DataGridCellsPresenter_PointerMoved;
-            this.PointerReleased += DataGridCellsPresenter_PointerReleased;
         }
 
         private bool IsPointerPressed
@@ -71,7 +68,7 @@ namespace ZyunUI
             {
                 OwningGrid.ClearSelection();
                 OwningGrid.CurrentCell = cellRef;
-                e.Handled = true;
+                //e.Handled = true;
             } 
         }
 
@@ -157,9 +154,6 @@ namespace ZyunUI
 
                 rcChild.Y += rcChild.Height;
             }
-
-            OwningGrid.ShowCurrentCellTick();
-
             return base.ArrangeOverride(finalSize);
         }
 

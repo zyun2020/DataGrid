@@ -127,6 +127,8 @@ namespace ZyunUI
         SelectFromAnchorToCurrent
     }
 
+
+
     /// <summary>
     /// Determines the selection model.
     /// </summary>
@@ -141,6 +143,14 @@ namespace ZyunUI
         /// Single DataGridSelectionMode
         /// </summary>
         Single = 1
+    }
+
+    public enum DataGridCurrentCellAction
+    {
+        None = 0,
+        Indicator = 1,
+        Edit = 2,
+        ReadyEdit = 3
     }
 
     /// <summary>

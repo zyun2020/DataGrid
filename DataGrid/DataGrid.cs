@@ -58,7 +58,7 @@ namespace ZyunUI
             SeparatorCollapsedWithoutAnimation
         }
 
-        private enum CellsSelectionMode
+        internal enum CellsSelectionMode
         {
             No,
             Columns,
@@ -81,8 +81,9 @@ namespace ZyunUI
         private const string DATAGRID_elementVerticalScrollBarName = "VerticalScrollBar";
 
         private const string DATAGRID_elementCellsOverlayCanvas = "CellsOverlayCanvas";
-        private const string DATAGRID_elementCurrentCellTick = "CurrentCellTick";
+        private const string DATAGRID_elementCurrentCellContainer = "CurrentCellContainer";
         private const string DATAGRID_elementCellsSelectionRange = "CellsSelectionRange";
+        private const string DATAGRID_elementEditElementContainerCell = "EditElementContainerCell";
 
         private const bool DATAGRID_defaultAutoGenerateColumns = true;
         private const bool DATAGRID_defaultCanUserReorderColumns = true;
@@ -153,7 +154,11 @@ namespace ZyunUI
         private Panel _rootPanel;
 
         private Canvas _cellsOverlayCanvas;
-        private Border _currentCellTick;
+
+        private Border _currentCellContainer;
+        private DataGridCell _editElementContainerCell;
+        private DataGridCurrentCellAction _currentCellAction = DataGridCurrentCellAction.Edit;
+
         private Border _cellsSelectionRange;
 
         private FrameworkElement _frozenColumnScrollBarSpacer;
@@ -225,30 +230,6 @@ namespace ZyunUI
             HookDataGridEvents();
         }
 
-        private VirtualKey LastHandledKeyDown
-        {
-            get;
-            set;
-        }
-
-        internal DataGridDisplayData DisplayData
-        {
-            get;
-            private set;
-        }
-
-        /// <summary>
-        /// Comparator class so we can sort list by the display index
-        /// </summary>
-        public class DisplayIndexComparer : IComparer<DataGridColumn>
-        {
-            // Calls CaseInsensitiveComparer.Compare with the parameters reversed.
-            int IComparer<DataGridColumn>.Compare(DataGridColumn x, DataGridColumn y)
-            {
-                return (x.DisplayIndex < y.DisplayIndex) ? -1 : 1;
-            }
-        }
-
         /// <summary>
         /// When overridden in a derived class, is invoked whenever application code or internal processes call <see
         /// cref="M:System.Windows.FrameworkElement.ApplyTemplate" /> .
@@ -259,13 +240,18 @@ namespace ZyunUI
             _keepScrollBarsShowing = false;
 
             _cellsOverlayCanvas = GetTemplateChild(DATAGRID_elementCellsOverlayCanvas) as Canvas;
-            _currentCellTick = GetTemplateChild(DATAGRID_elementCurrentCellTick) as Border;
-            if(null != _currentCellTick)
+            _currentCellContainer = GetTemplateChild(DATAGRID_elementCurrentCellContainer) as Border;
+            if(null != _currentCellContainer)
             {
-                _currentCellTick.Visibility = Visibility.Collapsed;
+                _currentCellContainer.Visibility = Visibility.Collapsed;
+            }
+            _editElementContainerCell = GetTemplateChild(DATAGRID_elementCurrentCellContainer) as DataGridCell;
+            if(_editElementContainerCell != null)
+            {
+                _editElementContainerCell.Visibility = Visibility.Collapsed;
             }
             _cellsSelectionRange = GetTemplateChild(DATAGRID_elementCellsSelectionRange) as Border;
-            if (null != _currentCellTick)
+            if (null != _cellsSelectionRange)
             {
                 _cellsSelectionRange.Visibility = Visibility.Collapsed;
             }
@@ -365,6 +351,29 @@ namespace ZyunUI
             UpdateDisabledVisual();
         }
 
+        private VirtualKey LastHandledKeyDown
+        {
+            get;
+            set;
+        }
+
+        internal DataGridDisplayData DisplayData
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
+        /// Comparator class so we can sort list by the display index
+        /// </summary>
+        public class DisplayIndexComparer : IComparer<DataGridColumn>
+        {
+            // Calls CaseInsensitiveComparer.Compare with the parameters reversed.
+            int IComparer<DataGridColumn>.Compare(DataGridColumn x, DataGridColumn y)
+            {
+                return (x.DisplayIndex < y.DisplayIndex) ? -1 : 1;
+            }
+        }
         private void InvalidateCellsArrange()
         {
             if (_cellsPresenter != null)
@@ -1826,61 +1835,107 @@ namespace ZyunUI
             get { return _currentCell; }
             set
             {
-                if(_currentCell.Equals(value)) return;
-               
-                GridCellRef oldCell = _currentCell;
+                bool showSelectionRange = IsShowSelectionRange;
+                ClearSelection();
+                if (showSelectionRange || !_currentCell.Equals(value))
+                {
+                    GridCellRef oldCell = _currentCell;
 
-                GridCellRef cell = value;
-                if (cell.Column < 0 || cell.Column >= ColumnCount ||
-                    cell.Row < 0 || cell.Row > RowCount)
-                {
-                    _currentCell = new GridCellRef();
+                    GridCellRef cell = value;
+                    if (cell.Column < 0 || cell.Column >= ColumnCount ||
+                        cell.Row < 0 || cell.Row > RowCount)
+                    {
+                        _currentCell = new GridCellRef();
+                    }
+                    else
+                    {
+                        _currentCell = cell;
+                    }
+                    OnCurrentCellChanged();
                 }
-                else
-                {
-                    _currentCell = cell;
-                }
-                ShowCurrentCellTick();
+
             }
         }
 
-        internal void ShowCurrentCellTick()
+        private void OnCurrentCellChanged()
         {
+            if(_currentCellAction == DataGridCurrentCellAction.None)
+            {
+                _currentCellContainer.Visibility = Visibility.Collapsed;
+                return;
+            }
+
             if (CurrentCell.IsValid)
             {
-                DataGridCell gridCell = DisplayData.GetDataGridCell(CurrentCell);
-                if (gridCell != null) {
+                bool hideLeft = false;
+                Rect rc = GetGridCellRect(CurrentCell, ref hideLeft);
+                if (rc.Width > 0 && rc.Height > 0)
+                {
+                    if (IsShowSelectionRange)
+                        _currentCellContainer.BorderThickness = new Thickness(1);
+                    else
+                        _currentCellContainer.BorderThickness = new Thickness(2);
 
-                    _currentCellTick.Width = gridCell.ActualWidth + 3;
-                    _currentCellTick.Height = gridCell.ActualHeight + 3;
+                    _currentCellContainer.Width = rc.Width + 1;
+                    _currentCellContainer.Height = rc.Height + 1;
+                    Canvas.SetLeft(_currentCellContainer, rc.X - 1);
+                    Canvas.SetTop(_currentCellContainer, rc.Y - 1);
 
-                    Vector3 pos = gridCell.ActualOffset;
-                    Canvas.SetLeft(_currentCellTick, pos.X - 2);
-                    Canvas.SetTop(_currentCellTick, pos.Y - 2);
-                    _currentCellTick.Visibility = Visibility.Visible;
+                    _currentCellContainer.Visibility = Visibility.Visible;
                 }
                 else
                 {
-                    _currentCellTick.Visibility = Visibility.Collapsed;
+                    _currentCellContainer.Visibility = Visibility.Collapsed;
                 }
             }
             else
             {
-                _currentCellTick.Visibility = Visibility.Collapsed;
+                _currentCellContainer.Visibility = Visibility.Collapsed;
             }
         }
-        private void OnCurrentCellChanged(GridCellRef oldCurrentCell, GridCellRef newCurrentCell)
-        {
-            if (oldCurrentCell.IsValid)
+
+        internal void OnSelectedCellsChanged()
+        { 
+            if (IsShowSelectionRange)
             {
-                DataGridCell gridCell = DisplayData.GetDataGridCell(oldCurrentCell);
-                if (gridCell != null) gridCell.ApplyCellState(true);
+                bool hideLeft = false;
+                Rect rc = GetSelectionRect(_cellsSelection, _cellsSelectionMode, ref hideLeft);
+                if (rc.Width > 0 && rc.Height > 0)
+                {
+                    Thickness thickness = new Thickness(2);
+                    if (hideLeft) thickness.Left = 0;
+                    _cellsSelectionRange.BorderThickness = thickness;
+                   
+                    _cellsSelectionRange.Width = rc.Width + 1;
+                    _cellsSelectionRange.Height = rc.Height + 1;
+                    Canvas.SetLeft(_cellsSelectionRange, rc.X - 1);
+                    Canvas.SetTop(_cellsSelectionRange, rc.Y - 1);
+
+                    _cellsSelectionRange.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    _cellsSelectionRange.Visibility = Visibility.Collapsed;
+                }
+            }
+            else
+            {
+                _cellsSelectionRange.Visibility = Visibility.Collapsed;
             }
 
-            if (newCurrentCell.IsValid)
+            OnCurrentCellChanged();
+        }
+       
+        private bool IsShowSelectionRange 
+        {
+            get
             {
-                DataGridCell gridCell = DisplayData.GetDataGridCell(newCurrentCell);
-                if (gridCell != null) gridCell.ApplyCellState(true);
+                if (_cellsSelectionMode == CellsSelectionMode.No || _cellsSelection == null ||
+                    (_cellsSelectionMode == CellsSelectionMode.Range && _cellsSelection.Columns <= 1 && _cellsSelection.Rows <= 1))
+                {
+                    return false;
+                }
+                return true;
             }
         }
 
@@ -1894,6 +1949,8 @@ namespace ZyunUI
 
                 _cellsPresenter.ApplyCellState();
             }
+
+            _cellsSelectionRange.Visibility = Visibility.Collapsed;
         }
 
         public void SelectRange(GridCellRef cellRef)
@@ -1912,6 +1969,8 @@ namespace ZyunUI
             {
                 _cellsPresenter.ApplyCellState();
             }
+
+            OnSelectedCellsChanged();
         }
 
         public bool CellIsSelected(GridCellRef cellRef)
@@ -1943,14 +2002,15 @@ namespace ZyunUI
             if (CurrentCell.IsValid && CurrentCell.Equals(cellRef)) return false;
             return CellIsSelected(cellRef);
         }
-
-       
+ 
         internal void UpdateCellsState()
         {
             if (_cellsPresenter != null)
             {
                 _cellsPresenter.ApplyCellState();
             }
+
+            OnSelectedCellsChanged();
         }
 
         internal int CurrentColumnIndex =>  CurrentCell.Column;

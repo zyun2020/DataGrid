@@ -1,19 +1,8 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Documents;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using ZyunUI.DataGridInternals;
 using ZyunUI.Utilities;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace ZyunUI
 {
@@ -22,7 +11,6 @@ namespace ZyunUI
 
     [TemplateVisualState(Name = VisualStates.StateNormal, GroupName = VisualStates.GroupCommon)]
     [TemplateVisualState(Name = VisualStates.StateSelected, GroupName = VisualStates.GroupCommon)]
-    [TemplateVisualState(Name = VisualStates.StateCurrent, GroupName = VisualStates.GroupCommon)]
     [TemplateVisualState(Name = VisualStates.StateInvalid, GroupName = VisualStates.GroupValidation)]
     [TemplateVisualState(Name = VisualStates.StateValid, GroupName = VisualStates.GroupValidation)]
     public sealed class DataGridCell : ContentControl
@@ -96,11 +84,7 @@ namespace ZyunUI
             }
 
             // CommonStates
-            if (this.IsCurrent)
-            {
-                //VisualStates.GoToState(this, animate, VisualStates.StateCurrent, VisualStates.StateNormal);
-            }
-            else if (this.IsSelected)
+            if (this.IsSelected)
             {
                 VisualStates.GoToState(this, animate, VisualStates.StateSelected, VisualStates.StateNormal);
             }

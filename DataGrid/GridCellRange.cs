@@ -1,4 +1,5 @@
 ﻿using System;
+using Windows.ApplicationModel.Activation;
 
 namespace ZyunUI
 {
@@ -18,6 +19,12 @@ namespace ZyunUI
             this.BottomRight = new GridCellRef(Math.Max(cell1.Row, cell2.Row), Math.Max(cell1.Column, cell2.Column));
         }
 
+        public GridCellRange(int row1, int row2, int col1, int col2)
+        {
+            this.TopLeft = new GridCellRef(Math.Min(row1, row2), Math.Min(col1, col2));
+            this.BottomRight = new GridCellRef(Math.Max(row1, row2), Math.Max(col1, col2));
+        }
+
         public bool IsContained(GridCellRef cell)
         {
             if(cell.Column >= LeftColumn && cell.Column <= RightColumn &&
@@ -28,13 +35,25 @@ namespace ZyunUI
             return false;
         }
 
+        internal void SetColumn(int minColumn, int maxColumn)
+        {
+            this.TopLeft = new GridCellRef(this.TopLeft.Row, minColumn);
+            this.BottomRight = new GridCellRef(this.BottomRight.Row, maxColumn);
+        }
+
+        internal void SetRow(int minRow, int maxRow)
+        {
+            this.TopLeft = new GridCellRef(minRow, this.TopLeft.Column);
+            this.BottomRight = new GridCellRef(maxRow, this.BottomRight.Column);
+        }
+
         /// <summary>
         /// Gets the top left cell.
         /// </summary>
         /// <value>
         /// The top left cell reference.
         /// </value>
-        public GridCellRef TopLeft { get; }
+        public GridCellRef TopLeft { get; private set; }
 
         /// <summary>
         /// Gets the bottom right cell.
@@ -42,7 +61,7 @@ namespace ZyunUI
         /// <value>
         /// The bottom right cell reference.
         /// </value>
-        public GridCellRef BottomRight { get; }
+        public GridCellRef BottomRight { get; private set; }
 
         /// <summary>
         /// Gets the index of the top row.
