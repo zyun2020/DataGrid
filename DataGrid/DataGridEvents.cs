@@ -16,11 +16,40 @@ using System.Text;
 using DiagnosticsDebug = System.Diagnostics.Debug;
 using ZyunUI.DataGridInternals;
 using Windows.Devices.Display.Core;
+using System;
 
 namespace ZyunUI
 {
     public partial class DataGrid
     {
+        protected virtual void OnCellEditEnded(DataGridCellEditEndedEventArgs e)
+        {
+            EventHandler<DataGridCellEditEndedEventArgs> handler = this.CellEditEnded;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+
+            // Raise the automation invoke event for the cell that just ended edit
+            //DataGridAutomationPeer peer = DataGridAutomationPeer.FromElement(this) as DataGridAutomationPeer;
+            //if (peer != null && AutomationPeer.ListenerExists(AutomationEvents.InvokePatternOnInvoked))
+            //{
+            //    peer.RaiseAutomationInvokeEvents(DataGridEditingUnit.Cell, e.Column, e.Row);
+            //}
+        }
+
+        /// <summary>
+        /// Raises the CellEditEnding event.
+        /// </summary>
+        protected virtual void OnCellEditEnding(DataGridCellEditEndingEventArgs e)
+        {
+            EventHandler<DataGridCellEditEndingEventArgs> handler = this.CellEditEnding;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
         private void HookDataGridEvents()
         {
             this.IsEnabledChanged += new DependencyPropertyChangedEventHandler(DataGrid_IsEnabledChanged);

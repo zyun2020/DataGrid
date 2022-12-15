@@ -25,6 +25,12 @@ namespace ZyunUI
             this.column = -1;
         }
 
+        public GridCellRef(GridCellRef cellRef)
+        {
+            this.row = cellRef.row;
+            this.column = cellRef.column;
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="GridCellRef" /> struct.
         /// </summary>

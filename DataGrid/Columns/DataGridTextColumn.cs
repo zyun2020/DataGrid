@@ -298,14 +298,14 @@ namespace ZyunUI
                 int len = uneditedText.Length;
                 KeyRoutedEventArgs keyEventArgs = editingEventArgs as KeyRoutedEventArgs;
                 if (keyEventArgs != null && keyEventArgs.Key == Windows.System.VirtualKey.F2)
-                {
-                    // Put caret at the end of the text
-                    textBox.Select(len, len);
+                { 
+                    // Select all text
+                    textBox.Select(0, len);
                 }
                 else
                 {
-                    // Select all text
-                    textBox.Select(0, len);
+                    // Put caret at the end of the text
+                    textBox.Select(len, len);
                 }
 
                 return uneditedText;

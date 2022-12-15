@@ -236,6 +236,12 @@ namespace ZyunUI
             return Rows[rowIndex].ActualHeight;
         }
 
+        private object GetRowData(int rowIndex)
+        {
+            DiagnosticsDebug.Assert(rowIndex >= 0 && rowIndex < RowCount, "Expected positive rowIndex.");
+            return CollectionView[rowIndex];
+        }
+
         private double GetRowsActualHeight(int fromRow, int toRow)
         {
             DiagnosticsDebug.Assert(toRow >= fromRow, "Expected toSlot greater or equal to fromSlot.");
@@ -274,7 +280,6 @@ namespace ZyunUI
                     dataGridCell.EnsureStyle(null);
 
                     dataGridCell.OwningColumn = dataGridColumn;
-                  
                     dataGridCell.Width = dataGridColumn.ActualWidth;
 
                     element = dataGridColumn.GenerateElementInternal(dataGridCell, dataItem);

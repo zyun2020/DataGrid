@@ -44,6 +44,8 @@ namespace ZyunUI
         {
             get
             {
+                if(OwningColumn == null || OwningRow == null) return false;
+
                 return this.OwningGrid.CurrentColumnIndex == this.OwningColumn.Index &&
                        this.OwningGrid.CurrentRowIndex == this.OwningRow.DataIndex;
             }
@@ -53,6 +55,7 @@ namespace ZyunUI
         {
             get
             {
+                if (OwningColumn == null || OwningRow == null) return false;
                 return OwningGrid.CellIsSelected(new GridCellRef(OwningRow.DataIndex, OwningColumn.Index));
             }
         }
