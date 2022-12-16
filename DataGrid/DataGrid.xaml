@@ -374,9 +374,7 @@
                                 <Border x:Name="CurrentCellContainer" 
                                         Visibility="Collapsed"
                                         BorderThickness="2" 
-                                        BorderBrush="{ThemeResource DataGridCellCurrentBorderBrush}">
-                                    <local:DataGridCell x:Name="EditElementGridCell"/>
-                                </Border>
+                                        BorderBrush="{ThemeResource DataGridCellCurrentBorderBrush}"/>                            
                                 <Border x:Name="CellsSelectionRange"
                                     Visibility="Collapsed"
                                     BorderThickness="2" 

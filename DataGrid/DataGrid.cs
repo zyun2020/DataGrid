@@ -16,6 +16,7 @@ using ZyunUI.DataGridInternals;
 using ZyunUI.Utilities;
 using static ZyunUI.DataGridInternals.DataGridError;
 using DiagnosticsDebug = System.Diagnostics.Debug;
+using System.Xml.Linq;
 
 namespace ZyunUI
 {
@@ -83,8 +84,7 @@ namespace ZyunUI
         private const string DATAGRID_elementCellsOverlayCanvas = "CellsOverlayCanvas";
         private const string DATAGRID_elementCellsSelectionRange = "CellsSelectionRange";
         private const string DATAGRID_elementCurrentCellContainer = "CurrentCellContainer";
-        private const string DATAGRID_elementEditElementGridCell = "EditElementGridCell";
-
+     
         private const bool DATAGRID_defaultAutoGenerateColumns = true;
         private const bool DATAGRID_defaultCanUserReorderColumns = true;
         private const bool DATAGRID_defaultCanUserResizeColumns = true;
@@ -132,6 +132,7 @@ namespace ZyunUI
 
         private Queue<Action> _lostFocusActions;
         private bool _hasEditing = false;
+        private FrameworkElement _editingElement = null;
         private object _uneditedValue; // Represents the original current cell value at the time it enters editing mode.
         private string _updateSourcePath;
         private RoutedEventArgs _editingEventArgs;
@@ -163,7 +164,6 @@ namespace ZyunUI
         private Canvas _cellsOverlayCanvas;
 
         private Border _currentCellContainer;
-        private DataGridCell _editElementGridCell;
         private DataGridCurrentCellAction _currentCellAction = DataGridCurrentCellAction.Edit;
 
         private Border _cellsSelectionRange;
@@ -209,6 +209,11 @@ namespace ZyunUI
         /// a preview should be shown, or cancel reordering.
         /// </summary>
         public event EventHandler<DataGridColumnReorderingEventArgs> ColumnReordering;
+
+        /// <summary>
+        /// Occurs before a cell or row enters editing mode.
+        /// </summary>
+        public event EventHandler<DataGridBeginningEditEventArgs> BeginningEdit;
 
         /// <summary>
         /// Occurs after cell editing has ended.
@@ -264,11 +269,7 @@ namespace ZyunUI
             {
                 _currentCellContainer.Visibility = Visibility.Collapsed;
             }
-            _editElementGridCell = GetTemplateChild(DATAGRID_elementEditElementGridCell) as DataGridCell;
-            if(_editElementGridCell != null)
-            {
-                _editElementGridCell.Visibility = Visibility.Collapsed;
-            }
+         
             _cellsSelectionRange = GetTemplateChild(DATAGRID_elementCellsSelectionRange) as Border;
             if (null != _cellsSelectionRange)
             {
@@ -1838,15 +1839,14 @@ namespace ZyunUI
 
         private bool EndCellEdit(DataGridEditAction editAction, bool exitEditingMode, bool keepFocus, bool raiseEvents)
         {
-            if (!_hasEditing)
+            DataGridCell editingCell = CurrentDataGridCell;
+            if (!_hasEditing || editingCell == null)
             {
                 return true;
             }
 
             GridCellRef cellRef = new GridCellRef(CurrentCell);
- 
             // We're ready to start ending, so raise the event
-            DataGridCell editingCell = _editElementGridCell;
             FrameworkElement editingElement = editingCell.Content as FrameworkElement;
             if (editingElement == null)
             {
@@ -1877,6 +1877,7 @@ namespace ZyunUI
             if (editAction == DataGridEditAction.Cancel)
             {
                 this.CurrentColumn.CancelCellEditInternal(editingElement, _uneditedValue);
+                CurrentColumn.RemoveEditingElement();
 
                 // Ensure that the current cell wasn't changed in the user column's CancelCellEdit
                 if (!CurrentCell.IsValid || !cellRef.Equals(CurrentCell))
@@ -1920,13 +1921,14 @@ namespace ZyunUI
                 //    ScrollSlotIntoView(this.CurrentColumnIndex, this.CurrentSlot, false /*forCurrentCellChange*/, true /*forceHorizontalScroll*/);
                 //    return false;
                 //}
+
+                CurrentColumn.RemoveEditingElement();
             }
 
             if (exitEditingMode)
             {
                 _hasEditing = false;
-                editingCell.Content = null;
-                editingCell.ApplyCellState(false /*animate*/);
+                editingCell.ApplyCellState(true /*animate*/);
 
                 // TODO: Figure out if we should restore a cached this.IsTabStop.
                 this.IsTabStop = true;
@@ -1934,9 +1936,8 @@ namespace ZyunUI
                 {
                     this.Focus(FocusState.Programmatic);
                 }
-                editingCell.Visibility = Visibility.Collapsed;
-
-                //PopulateCellContent(!exitEditingMode /*isCellEdited*/, this.CurrentColumn, this.EditingRow, editingCell);
+                
+                PopulateCellContent(!exitEditingMode /*isCellEdited*/, this.CurrentColumn, this.GetRowData(CurrentRowIndex), editingCell);
             }
 
             // We're done, so raise the CellEditEnded event
@@ -1950,41 +1951,75 @@ namespace ZyunUI
             return !(exitEditingMode && cellRef.Equals(CurrentCell));
         }
 
-        internal void BeginCellEdit()
+        internal void BeginCellEdit(RoutedEventArgs editingEventArgs)
         {
-            if (!CurrentCell.IsValid) return;
+            DataGridCell dataGridCell = CurrentDataGridCell;
+            if(dataGridCell == null) return;
 
-            DataGridBoundColumn dataGridBoundColumn = CurrentColumn as DataGridBoundColumn;
-            if (dataGridBoundColumn == null || _editElementGridCell == null)
-            {
-                return;
-            }
+            DataGridBeginningEditEventArgs e = new DataGridBeginningEditEventArgs(this.CurrentColumn, this.CurrentRow, editingEventArgs);
+            OnBeginningEdit(e);
+
+            DataGridBoundColumn dataGridColumn = this.CurrentColumn as DataGridBoundColumn;
             Object dataItem = GetRowData(CurrentRowIndex);
-            DataGridRow gridRow = Rows[CurrentRowIndex];
 
             // Generate EditingElement and apply column style if available
-            FrameworkElement element = dataGridBoundColumn.GenerateEditingElementInternal(_editElementGridCell, dataItem);
+            FrameworkElement element = dataGridColumn.GenerateEditingElementInternal(dataGridCell, dataItem);
             if (element != null)
             {
-                if (dataGridBoundColumn != null && dataGridBoundColumn.EditingElementStyle != null)
+                if (dataGridColumn != null && dataGridColumn.EditingElementStyle != null)
                 {
-                    element.SetStyleWithType(dataGridBoundColumn.EditingElementStyle);
+                    element.SetStyleWithType(dataGridColumn.EditingElementStyle);
                 }
 
                 // Subscribe to the new element's events
                 element.Loaded += new RoutedEventHandler(EditingElement_Loaded);
             }
-
             _hasEditing = true;
-            _editElementGridCell.EnsureStyle(null);
-            _editElementGridCell.OwningColumn = dataGridBoundColumn;
-            _editElementGridCell.Width = dataGridBoundColumn.ActualWidth;
+            _editingElement = element;
+        }
 
-            _editElementGridCell.DataContext = dataItem;
-            _editElementGridCell.Height = gridRow.ActualHeight;
+        private void PopulateCellContent(
+            bool isCellEdited,
+            DataGridColumn dataGridColumn,
+            Object dataContext,
+            DataGridCell dataGridCell)
+        {
+            DiagnosticsDebug.Assert(dataGridColumn != null, "Expected non-null dataGridColumn.");
+          
+            DiagnosticsDebug.Assert(dataGridCell != null, "Expected non-null dataGridCell.");
 
-            _editElementGridCell.Content = element;
-            _editElementGridCell.Visibility = Visibility.Visible;
+            FrameworkElement element = null;
+            DataGridBoundColumn dataGridBoundColumn = dataGridColumn as DataGridBoundColumn;
+            if (isCellEdited)
+            {
+                _hasEditing = true;
+                // Generate EditingElement and apply column style if available
+                element = dataGridColumn.GenerateEditingElementInternal(dataGridCell, dataContext);
+                if (element != null)
+                {
+                    if (dataGridBoundColumn != null && dataGridBoundColumn.EditingElementStyle != null)
+                    {
+                        element.SetStyleWithType(dataGridBoundColumn.EditingElementStyle);
+                    }
+
+                    // Subscribe to the new element's events
+                    element.Loaded += new RoutedEventHandler(EditingElement_Loaded);
+                }
+            }
+            else
+            {
+                _hasEditing = false;
+                // Generate Element and apply column style if available
+                element = dataGridColumn.GenerateElementInternal(dataGridCell, dataContext);
+                if (element != null)
+                {
+                    if (dataGridBoundColumn != null && dataGridBoundColumn.ElementStyle != null)
+                    {
+                        element.SetStyleWithType(dataGridBoundColumn.ElementStyle);
+                    }
+                }
+            }
+            dataGridCell.Content = element;
         }
 
         private GridCellRef _currentCell = new GridCellRef(-1, -1);
@@ -2012,7 +2047,7 @@ namespace ZyunUI
                         _currentCell = cell;
                     }
                     bUpdateCurrent = true;
-                    BeginCellEdit();
+                    BeginCellEdit(null);
                 }
 
                 if (bUpdateCurrent)
@@ -2050,6 +2085,16 @@ namespace ZyunUI
 
                 DiagnosticsDebug.Assert(this.CurrentRowIndex < this.Rows.Count, "Expected CurrentColumnIndex smaller than ColumnsItemsInternal.Count.");
                 return this.Rows[this.CurrentRowIndex];
+            }
+        }
+
+
+        internal DataGridCell CurrentDataGridCell
+        {
+            get
+            {
+                if (!CurrentCell.IsValid) return null;
+                return DisplayData.GetDataGridCell(CurrentCell);
             }
         }
 
@@ -2162,10 +2207,10 @@ namespace ZyunUI
 
         internal bool WaitForLostFocus(Action action)
         {
-            if (_hasEditing && !_executingLostFocusActions)
+            DataGridCell editingCell = CurrentDataGridCell;
+            if (_hasEditing && editingCell != null && !_executingLostFocusActions)
             {
-                DataGridColumn editingColumn = this.ColumnsItemsInternal[this.CurrentColumnIndex];
-                FrameworkElement editingElement = _editElementGridCell.Content as FrameworkElement;
+                FrameworkElement editingElement = editingCell.Content as FrameworkElement;
                 if (editingElement != null && editingElement.ContainsChild(_focusedObject))
                 {
                     DiagnosticsDebug.Assert(_lostFocusActions != null, "Expected non-null _lostFocusActions.");
@@ -2199,7 +2244,8 @@ namespace ZyunUI
 
         private bool FocusEditingCell(bool setFocus)
         {
-            if (_editElementGridCell == null) return false;
+            DataGridCell editingCell = CurrentDataGridCell;
+            if (editingCell == null) return false;
 
             DiagnosticsDebug.Assert(this.CurrentColumnIndex >= 0, "Expected positive CurrentColumnIndex.");
             DiagnosticsDebug.Assert(this.CurrentColumnIndex < this.ColumnsItemsInternal.Count, "Expected CurrentColumnIndex smaller than ColumnsItemsInternal.Count.");
@@ -2210,7 +2256,7 @@ namespace ZyunUI
             _focusEditingControl = false;
 
             bool success = false;
-            DataGridCell dataGridCell = _editElementGridCell;
+            DataGridCell dataGridCell = editingCell;
             if (setFocus)
             {
                 if (dataGridCell.ContainsFocusedElement(this))

@@ -15,6 +15,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using ZyunUI;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -37,6 +38,12 @@ namespace DataGridDemo
         public async void LoadDataAsync()
         {
             dataGrid.ItemsSource = await viewModel.GetDataAsyncEx();
+
+            var comboBoxColumn = dataGrid.Columns.FirstOrDefault(x => x.Tag?.Equals("Mountain") == true) as DataGridComboBoxColumn;
+            if (comboBoxColumn != null)
+            {
+                comboBoxColumn.ItemsSource = await viewModel.GetMountains();
+            }
         }
 
      

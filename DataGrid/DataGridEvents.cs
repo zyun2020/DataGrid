@@ -22,6 +22,15 @@ namespace ZyunUI
 {
     public partial class DataGrid
     {
+        protected virtual void OnBeginningEdit(DataGridBeginningEditEventArgs e)
+        {
+            EventHandler<DataGridBeginningEditEventArgs> handler = this.BeginningEdit;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
         protected virtual void OnCellEditEnded(DataGridCellEditEndedEventArgs e)
         {
             EventHandler<DataGridCellEditEndedEventArgs> handler = this.CellEditEnded;
@@ -317,7 +326,7 @@ namespace ZyunUI
             }
 
             //Select
-            PointerPoint expPointer = e.GetCurrentPoint(this);
+            PointerPoint expPointer = e.GetCurrentPoint(_cellsPresenter);
             if (e.Pointer.PointerDeviceType == PointerDeviceType.Mouse && !expPointer.Properties.IsLeftButtonPressed)
             {
                 return;

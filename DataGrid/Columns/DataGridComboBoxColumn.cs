@@ -385,7 +385,7 @@ namespace ZyunUI
         {
             if(editingElement is ComboBox comboBox)
             {
-                comboBox.IsDropDownOpen = true;
+                //comboBox.IsDropDownOpen = true;
                 return comboBox.SelectedItem;
             }
 
