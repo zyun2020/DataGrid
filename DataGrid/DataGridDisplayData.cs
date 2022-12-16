@@ -257,8 +257,11 @@ namespace ZyunUI.DataGridInternals
             return rowVisuals;
         }
 
+
         internal void UpdateDisplayedRows(int newFirstDisplayedRow, int newLastDisplayedRow)
         {
+            _owner.ResetEditingElement(newFirstDisplayedRow, newLastDisplayedRow);
+
             if (this.FirstDisplayedRow == -1 || this.LastDisplayedRow == -1 ||
                 newLastDisplayedRow < this.FirstDisplayedRow || newFirstDisplayedRow > this.LastDisplayedRow)
             {

@@ -461,6 +461,21 @@ namespace ZyunUI
             DisplayData.UpdateDisplayedRows(firstDisplayedScrollingRow, lastDisplayedScrollingRow);
         }
 
+        internal void ResetEditingElement(int firstDisplayedScrollingRow, int lastDisplayedScrollingRow)
+        {
+            if (!CurrentCell.IsValid) return;
+
+            if(CurrentCell.Row >= DisplayData.FirstDisplayedRow && CurrentCell.Row <= DisplayData.LastDisplayedRow &&
+                (CurrentCell.Row < firstDisplayedScrollingRow || CurrentCell.Row > lastDisplayedScrollingRow))
+            {
+                DataGridCell editingCell = CurrentDataGridCell;
+                if (editingCell != null)
+                {
+                    PopulateCellContent(false, this.CurrentColumn, this.GetRowData(CurrentRowIndex), editingCell);
+                }
+            }
+        }
+
         private void ResetDisplayedRows()
         {
             this.DisplayData.ClearElements(true /*recycleRows*/);
