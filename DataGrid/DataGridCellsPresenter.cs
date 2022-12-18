@@ -86,6 +86,14 @@ namespace ZyunUI
             }
         }
 
+        internal void EnsureGridLines()
+        {
+            foreach (DataGridCell cell in this.Children)
+            {
+                cell.EnsureGridLines();
+            }
+        }
+
         protected override Size MeasureOverride(Size availableSize)
         {
             OwningGrid.OnPendingVerticalScroll();

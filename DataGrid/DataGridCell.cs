@@ -37,7 +37,7 @@ namespace ZyunUI
             _rightGridLine = GetTemplateChild(DATAGRIDCELL_elementRightGridLine) as Rectangle;
             _bottomGridLine = GetTemplateChild(DATAGRIDCELL_elementBottomGridLine) as Rectangle;
 
-            EnsureGridLine();
+            EnsureGridLines();
         }
 
         internal bool IsCurrent
@@ -109,7 +109,7 @@ namespace ZyunUI
 
         // Makes sure the right gridline has the proper stroke and visibility. If lastVisibleColumn is specified, the
         // right gridline will be collapsed if this cell belongs to the lastVisibileColumn and there is no filler column
-        internal void EnsureGridLine()
+        internal void EnsureGridLines()
         {
             if (this.OwningGrid != null && _rightGridLine != null)
             {

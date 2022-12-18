@@ -481,6 +481,8 @@ namespace ZyunUI
             this.DisplayData.ClearElements(true /*recycleRows*/);
             this.AvailableSlotElementRoom = this.CellsViewHeight;
         }
+
+       
     }
    
 }

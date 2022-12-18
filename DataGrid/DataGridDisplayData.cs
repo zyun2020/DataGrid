@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Windows.Foundation;
 using ZyunUI.Utilities;
+using static ZyunUI.DataGridInternals.DataGridError;
 using DiagnosticsDebug = System.Diagnostics.Debug;
 
 namespace ZyunUI.DataGridInternals
@@ -218,8 +219,18 @@ namespace ZyunUI.DataGridInternals
             {
                 _recyclableRows.Clear();
             }
-
             _displayedRows.Clear();
+        }
+
+        internal IEnumerable<DataGridRowVisuals> GetAllRows()
+        {
+            foreach (DataGridRowVisuals element in _displayedRows)
+            { 
+                if (element != null)
+                {
+                    yield return element;
+                }
+            } 
         }
 
         internal DataGridRowVisuals GetDisplayedRow(int displayIndex)
@@ -257,12 +268,11 @@ namespace ZyunUI.DataGridInternals
             return rowVisuals;
         }
 
-
         internal void UpdateDisplayedRows(int newFirstDisplayedRow, int newLastDisplayedRow)
         {
             _owner.ResetEditingElement(newFirstDisplayedRow, newLastDisplayedRow);
 
-            if (this.FirstDisplayedRow == -1 || this.LastDisplayedRow == -1 ||
+            if (this.NumDisplayedRows == 0 || this.FirstDisplayedRow == -1 || this.LastDisplayedRow == -1 ||
                 newLastDisplayedRow < this.FirstDisplayedRow || newFirstDisplayedRow > this.LastDisplayedRow)
             {
                 ClearElements(true);

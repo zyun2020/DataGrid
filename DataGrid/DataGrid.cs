@@ -2292,7 +2292,10 @@ namespace ZyunUI
                 _cellsPresenter.ApplyCellState();
             }
 
-            _cellsSelectionRange.Visibility = Visibility.Collapsed;
+            if (_cellsSelectionRange != null)
+            {
+                _cellsSelectionRange.Visibility = Visibility.Collapsed;
+            }
         }
 
         public void SelectRange(GridCellRef cellRef)
@@ -2355,24 +2358,30 @@ namespace ZyunUI
             UpdateSelectedCells();
         }
 
-        private void ClearRows(bool recycle)
+        private void ClearRows()
         {
-            // Need to clean up recycled rows even if the RowCount is 0
-            //SetCurrentCellCore(-1, -1, false /*commitEdit*/, false /*endRowEdit*/);
-            
-            UnloadElements(recycle);
- 
+            ResetCurrentCellCore();
+
+            if (_cellsPresenter != null)
+            {
+                _cellsPresenter.Children.Clear();
+            }
+            DisplayData.ClearElements(false);
+
             this.NegVerticalOffset = 0;
             SetVerticalOffset(0);
             ComputeScrollBarsLayout();
         }
 
-        private void RemoveDisplayedColumnHeaders()
+        private bool ResetCurrentCellCore()
         {
-            if (_columnHeadersPresenter != null)
-            {
-                _columnHeadersPresenter.Children.Clear();
-            }
+            CurrentCell = new GridCellRef(-1, -1);
+            return !CurrentCell.IsValid;
+        }
+
+        private void EnsureHorizontalLayout()
+        {
+            Refresh(true, false);
         }
     }
 }

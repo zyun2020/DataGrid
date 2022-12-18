@@ -80,10 +80,10 @@ namespace ZyunUI
                 }
             }
 
-            //foreach (DataGridRow row in GetAllRows())
-            //{
-            //    row.EnsureGridLines();
-            //}
+            if(_cellsPresenter != null)
+            {
+                _cellsPresenter.EnsureGridLines();
+            }
         }
 
         // Returns the column's width
@@ -115,6 +115,22 @@ namespace ZyunUI
             }
         }
 
+        private void RemoveDisplayedColumnHeader(DataGridColumn dataGridColumn)
+        {
+            if (_columnHeadersPresenter != null)
+            {
+                _columnHeadersPresenter.Children.Remove(dataGridColumn.HeaderCell);
+            }
+        }
+
+        private void RemoveDisplayedColumnHeaders()
+        {
+            if (_columnHeadersPresenter != null)
+            {
+                _columnHeadersPresenter.Children.Clear();
+            }
+        }
+
         internal bool GetColumnReadOnlyState(DataGridColumn dataGridColumn, bool isReadOnly)
         {
             DiagnosticsDebug.Assert(dataGridColumn != null, "Expected non-null dataGridColumn.");
@@ -141,7 +157,7 @@ namespace ZyunUI
         internal void OnClearingColumns()
         {
             // Rows need to be cleared first. There cannot be rows without also having columns.
-            ClearRows(false);
+            ClearRows();
 
             // Removing all the column header cells
             RemoveDisplayedColumnHeaders();
@@ -161,40 +177,29 @@ namespace ZyunUI
         internal void OnColumnCanUserResizeChanged(DataGridColumn column)
         {
             if (column.IsVisible)
-            { 
+            {
+                EnsureHorizontalLayout();
             }
         }
 
         internal void OnColumnCellStyleChanged(DataGridColumn column, Style previousStyle)
         {
             // Set HeaderCell.Style for displayed rows if HeaderCell.Style is not already set
-            
-             
+            foreach (DataGridRowVisuals row in DisplayData.GetAllRows())
+            {
+                row[column.Index].EnsureStyle(previousStyle);
+            }
+            Refresh(true, false);
         }
 
         internal void OnColumnCollectionChanged_PostNotification(bool columnsGrew)
         {
-            if (columnsGrew &&
-                this.CurrentColumnIndex == -1)
-            { ;
-            }
-
-            if (_autoGeneratingColumnOperationCount == 0)
-            { 
-            }
+            Refresh(true, false);
         }
 
         internal void OnColumnCollectionChanged_PreNotification(bool columnsGrew)
         {
-            // dataGridColumn==null means the collection was refreshed.
-            if (columnsGrew && _autoGeneratingColumnOperationCount == 0 && this.ColumnsItemsInternal.Count == 1)
-            {
-                //RefreshRows(false /*recycleRows*/, true /*clearRows*/);
-            }
-            else
-            {
-                InvalidateMeasure();
-            }
+           
         }
 
         internal void OnColumnDisplayIndexChanged(DataGridColumn dataGridColumn)
@@ -412,11 +417,24 @@ namespace ZyunUI
             DiagnosticsDebug.Assert(updatedColumn != null, "Expected non-null updatedColumn.");
             if (updatedColumn.IsVisible)
             {
-                //EnsureHorizontalLayout();
+                Refresh(true, false);
             }
         }
 
-     
+        internal void OnInsertedColumn_PostNotification(GridCellRef newCurrentCellCoordinates, int newDisplayIndex)
+        {
+            // Update current cell if needed
+            if (newCurrentCellCoordinates.Column != -1)
+            {
+                DiagnosticsDebug.Assert(this.CurrentColumnIndex == -1, "Expected CurrentColumnIndex equals -1.");
+                CurrentCell = newCurrentCellCoordinates;
+
+                if (newDisplayIndex < this.FrozenColumnCount)
+                {
+                    CorrectColumnFrozenStates();
+                }
+            }
+        }
 
         internal void OnInsertedColumn_PreNotification(DataGridColumn insertedColumn)
         {
@@ -430,34 +448,52 @@ namespace ZyunUI
             CorrectColumnDisplayIndexesAfterInsertion(insertedColumn);
 
             InsertDisplayedColumnHeader(insertedColumn);
-
-            // Insert the missing data cells
-            //if (this.RowCount > 0)
-            //{
-            //    int newColumnCount = this.ColumnsItemsInternal.Count;
-
-            //    foreach (DataGridRow row in GetAllRows())
-            //    {
-            //        if (row.Cells.Count < newColumnCount)
-            //        {
-            //            AddNewCellPrivate(row, insertedColumn);
-            //        }
-            //    }
-            //}
-
-            if (insertedColumn.IsVisible)
-            {
-                //EnsureHorizontalLayout();
-            }
-
+  
             DataGridBoundColumn boundColumn = insertedColumn as DataGridBoundColumn;
             if (boundColumn != null && !boundColumn.IsAutoGenerated)
             {
                 boundColumn.SetHeaderFromBinding();
             }
+
+            ClearRows();
+            Refresh(true, false);
         }
 
-       
+        internal GridCellRef OnInsertingColumn(int columnIndexInserted, DataGridColumn insertColumn)
+        {
+            GridCellRef newCurrentCellCoordinates;
+            DiagnosticsDebug.Assert(insertColumn != null, "Expected non-null insertColumn.");
+
+            if (insertColumn.OwningGrid != null)
+            {
+                throw DataGridError.DataGrid.ColumnCannotBeReassignedToDifferentDataGrid();
+            }
+
+            // Reset current cell if there is one, no matter the relative position of the columns involved
+            if (this.CurrentColumnIndex != -1)
+            {
+                newCurrentCellCoordinates = new GridCellRef(
+                    columnIndexInserted <= this.CurrentColumnIndex ? this.CurrentColumnIndex + 1 : this.CurrentColumnIndex,
+                    this.CurrentRowIndex);
+                ResetCurrentCellCore();
+            }
+            else
+            {
+                newCurrentCellCoordinates = new GridCellRef(-1, -1);
+            }
+
+            return newCurrentCellCoordinates;
+        }
+
+        internal void OnRemovedColumn_PostNotification(GridCellRef newCurrentCellCoordinates)
+        {
+            // Update current cell if needed
+            if (newCurrentCellCoordinates.Column != -1)
+            {
+                DiagnosticsDebug.Assert(this.CurrentColumnIndex == -1, "Expected CurrentColumnIndex equals -1.");
+                CurrentCell = newCurrentCellCoordinates;
+            }
+        }
 
         internal void OnRemovedColumn_PreNotification(DataGridColumn removedColumn)
         {
@@ -477,27 +513,115 @@ namespace ZyunUI
             }
 
             UpdateDisplayedColumns();
+            RemoveDisplayedColumnHeader(removedColumn);
 
-            // Fix the existing rows by removing cells at correct index
-            int newColumnCount = this.ColumnsItemsInternal.Count;
-
-            if (_cellsPresenter != null)
-            {
-                //foreach (DataGridRow row in GetAllRows())
-                //{
-                //    if (row.Cells.Count > newColumnCount)
-                //    {
-                //        row.Cells.RemoveAt(removedColumn.Index);
-                //    }
-                //}
-
-                _cellsPresenter.InvalidateArrange();
-            }
-
-            //RemoveDisplayedColumnHeader(removedColumn);
+            ClearRows();
+            Refresh(true, false);
         }
 
-     
+        internal GridCellRef OnRemovingColumn(DataGridColumn dataGridColumn)
+        {
+            DiagnosticsDebug.Assert(dataGridColumn != null, "Expected non-null dataGridColumn.");
+            DiagnosticsDebug.Assert(dataGridColumn.Index >= 0, "Expected positive dataGridColumn.Index.");
+            DiagnosticsDebug.Assert(dataGridColumn.Index < this.ColumnsItemsInternal.Count, "Expected dataGridColumn.Index smaller than ColumnsItemsInternal.Count.");
+
+            GridCellRef newCurrentCellCoordinates;
+
+            int columnIndex = dataGridColumn.Index;
+
+            // Reset the current cell's address if there is one.
+            if (this.CurrentColumnIndex != -1)
+            {
+                int newCurrentColumnIndex = this.CurrentColumnIndex;
+                if (columnIndex == newCurrentColumnIndex)
+                {
+                    DataGridColumn dataGridColumnNext = this.ColumnsInternal.GetNextVisibleColumn(this.ColumnsItemsInternal[columnIndex]);
+                    if (dataGridColumnNext != null)
+                    {
+                        if (dataGridColumnNext.Index > columnIndex)
+                        {
+                            newCurrentColumnIndex = dataGridColumnNext.Index - 1;
+                        }
+                        else
+                        {
+                            newCurrentColumnIndex = dataGridColumnNext.Index;
+                        }
+                    }
+                    else
+                    {
+                        DataGridColumn dataGridColumnPrevious = this.ColumnsInternal.GetPreviousVisibleColumn(this.ColumnsItemsInternal[columnIndex]);
+                        if (dataGridColumnPrevious != null)
+                        {
+                            if (dataGridColumnPrevious.Index > columnIndex)
+                            {
+                                newCurrentColumnIndex = dataGridColumnPrevious.Index - 1;
+                            }
+                            else
+                            {
+                                newCurrentColumnIndex = dataGridColumnPrevious.Index;
+                            }
+                        }
+                        else
+                        {
+                            newCurrentColumnIndex = -1;
+                        }
+                    }
+                }
+                else if (columnIndex < newCurrentColumnIndex)
+                {
+                    newCurrentColumnIndex--;
+                }
+
+                newCurrentCellCoordinates = new GridCellRef(newCurrentColumnIndex, (newCurrentColumnIndex == -1) ? -1 : this.CurrentRowIndex);
+                if (columnIndex == this.CurrentColumnIndex)
+                {
+                    // If the commit fails, force a cancel edit
+                    if (!this.CommitEdit(false /*exitEditingMode*/))
+                    {
+                        this.CancelEdit(false /*raiseEvents*/);
+                    }
+                }
+            }
+            else
+            {
+                newCurrentCellCoordinates = new GridCellRef(-1, -1);
+            }
+
+            // If the last column is removed, delete all the rows first.
+            if (this.ColumnsItemsInternal.Count == 1)
+            {
+                ClearRows();
+            }
+
+            // Is deleted column scrolled off screen?
+            if (dataGridColumn.IsVisible &&
+                !dataGridColumn.IsFrozen &&
+                this.DisplayData.FirstDisplayedCol >= 0)
+            {
+                // Deleted column is part of scrolling columns.
+                if (this.DisplayData.FirstDisplayedCol == dataGridColumn.Index)
+                {
+                    // Deleted column is first scrolling column
+                    _horizontalOffset -= _negHorizontalOffset;
+                    _negHorizontalOffset = 0;
+                }
+                else if (!this.ColumnsInternal.DisplayInOrder(this.DisplayData.FirstDisplayedCol, dataGridColumn.Index))
+                {
+                    // Deleted column is displayed before first scrolling column
+                    DiagnosticsDebug.Assert(_horizontalOffset >= GetEdgedColumnWidth(dataGridColumn), "Expected _horizontalOffset greater than or equal to GetEdgedColumnWidth(dataGridColumn).");
+                    _horizontalOffset -= GetEdgedColumnWidth(dataGridColumn);
+                }
+
+                if (_hScrollBar != null && _hScrollBar.Visibility == Visibility.Visible)
+                {
+                    _hScrollBar.Value = _horizontalOffset;
+                }
+            }
+
+            return newCurrentCellCoordinates;
+        }
+
+
         /// <summary>
         /// Called when a column property changes, and its cells need to adjust that column change.
         /// </summary>
@@ -505,34 +629,10 @@ namespace ZyunUI
         {
             DiagnosticsDebug.Assert(dataGridColumn != null, "Expected non-null dataGridColumn.");
 
-            // Take care of the non-displayed loaded rows
-            //for (int index = 0; index < _loadedRows.Count;)
-            //{
-            //    DataGridRow dataGridRow = _loadedRows[index];
-            //    DiagnosticsDebug.Assert(dataGridRow != null, "Expected non-null dataGridRow.");
-            //    if (!this.IsSlotVisible(dataGridRow.Slot))
-            //    {
-            //        RefreshCellElement(dataGridColumn, dataGridRow, propertyName);
-            //    }
-
-            //    index++;
-            //}
-
-            //// Take care of the displayed rows
-            //if (_rowsPresenter != null)
-            //{
-            //    foreach (DataGridRow row in GetAllRows())
-            //    {
-            //        RefreshCellElement(dataGridColumn, row, propertyName);
-            //    }
-
-            //    // This update could change layout so we need to update our estimate and invalidate
-            //    InvalidateRowHeightEstimate();
-            //    InvalidateMeasure();
-            //}
+            ClearRows();
+            Refresh(true, false);
         }
 
-    
 
         private static DataGridAutoGeneratingColumnEventArgs GenerateColumn(Type propertyType, string propertyName, string header)
         {
@@ -563,20 +663,6 @@ namespace ZyunUI
             return new DataGridTextColumn();
         }
 
-
-        private static void RefreshCellElement(DataGridColumn dataGridColumn, DataGridRow dataGridRow, string propertyName)
-        {
-            DiagnosticsDebug.Assert(dataGridColumn != null, "Expected non-null dataGridColumn.");
-            DiagnosticsDebug.Assert(dataGridRow != null, "Expected non-null dataGridRow.");
-
-            //DataGridCell dataGridCell = dataGridRow.Cells[dataGridColumn.Index];
-            //DiagnosticsDebug.Assert(dataGridCell != null, "Expected non-null dataGridCell.");
-            //FrameworkElement element = dataGridCell.Content as FrameworkElement;
-            //if (element != null)
-            //{
-            //    dataGridColumn.RefreshCellContent(element, dataGridRow.ComputedForeground, propertyName);
-            //}
-        }
 
         private bool AddGeneratedColumn(DataGridAutoGeneratingColumnEventArgs e)
         {
@@ -1107,7 +1193,6 @@ namespace ZyunUI
             }
         }
 
-        
         private bool GetColumnEffectiveReadOnlyState(DataGridColumn dataGridColumn)
         {
             DiagnosticsDebug.Assert(dataGridColumn != null, "Expected non-null dataGridColumn.");
